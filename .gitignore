@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Internal planning docs — kept local, not published
+old_req/
+
+# Claude Code per-user settings (personal, not shared)
+.claude/settings.local.json
