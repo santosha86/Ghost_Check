@@ -5,6 +5,26 @@
 
 ---
 
+## ⚡ Quick start — Santosh, copy-paste this into your next Claude Code session
+
+When you open Claude Code (web or desktop) on a new machine and connect it to this repo, paste the block below as your very first message. Nothing else is needed.
+
+```
+I'm continuing a project called GhostCheck. This repo is connected.
+
+Please:
+1. Read SESSION_RESUME.md first — it has the full hand-off from the previous
+   session (my profile, the binding Teach Mode rules, what's been done so
+   far, and the exact next step).
+2. Then read GhostCheck_Build_Prompt.md — the full build spec.
+3. Greet me as instructed in section 8 of SESSION_RESUME.md, then wait for
+   me to say "continue" before writing any files.
+
+Do not start writing code yet.
+```
+
+---
+
 ## 0. How to use this file (instructions for the next Claude)
 
 Santosh is continuing the GhostCheck build from a different machine. Your local memory files from the previous session do not travel across machines — **this file IS the memory**. Do not skip any section.
