@@ -1,0 +1,151 @@
+# ============================================================
+# GhostCheck — Aggregator Weights
+# ============================================================
+#
+# These weights drive the weighted-logistic aggregator (see
+# docs/SCHEMAS.md §13). Each of the 11 agents gets a weight in
+# the range [0.0, 1.0]; the 11 weights MUST sum to 1.0.
+#
+# WHY THIS FILE MATTERS
+# ---------------------
+# The aggregator combines 11 independent verdicts into one
+# callback probability. If all agents had equal weight
+# (1 / 11 ≈ 0.091), a LOW-severity keyword mismatch would count
+# the same as a CRITICAL-severity seniority mismatch — which is
+# wrong. These weights encode the *relative importance* of each
+# silence driver, based on what actually gets senior candidates
+# ghosted.
+#
+# HOW THE WEIGHTS ARE CHOSEN
+# --------------------------
+# Three tiers, mirroring the build prompt (section 5):
+#
+#   Tier A — invisible failure agents (the differentiators
+#   that no existing CV checker measures). Weighted heaviest
+#   because these are the dimensions that actually drive senior
+#   silence. Total ≈ 0.54.
+#
+#   Tier B — channel / funnel math agents. Medium weight.
+#   Valuable, but maximally useful only once the user has built
+#   up an applications log. Total ≈ 0.24.
+#
+#   Tier C — standard CV quality signals. Lower weight because
+#   these are table stakes that every CV checker already covers —
+#   they are not where GhostCheck's differentiation lives.
+#   Total ≈ 0.22.
+#
+# UNKNOWN HANDLING
+# ----------------
+# When an agent emits UNKNOWN (e.g. `funnel-math` without an
+# applications log, or `posting-decoder` without a posted_date),
+# that agent's weight is redistributed proportionally across the
+# remaining non-UNKNOWN agents at runtime. See SCHEMAS.md §13.
+#
+# You do NOT need to re-normalise these weights yourself to
+# handle missing data. The aggregator does it at runtime.
+#
+# TUNING
+# ------
+# These weights are a V1 default, calibrated from senior-hiring
+# heuristics — not from your specific callback outcomes (yet).
+#
+# Over time:
+#   - V1.2 calibration loop: as you log real outcomes in
+#     applications/*/outcome.md, weights get auto-tuned toward
+#     whatever best predicts YOUR callbacks.
+#   - V1.1 Hermes/GEPA self-evolution: prompt text of each agent
+#     gets mutated and scored against outcomes, potentially
+#     changing which agents carry real signal — weights shift
+#     accordingly.
+#
+# Hand-tuning these values is supported but generally unnecessary
+# once calibration is running. If you DO hand-tune, remember the
+# 11 values must still sum to 1.0.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Tier A — invisible failure agents   (subtotal: 0.54)
+# ------------------------------------------------------------
+
+# Strongest differentiator. Seniority bucket mismatch is
+# consistently the single biggest silence driver at senior
+# levels — a Staff-looking CV applying to Director roles gets
+# ghosted no matter how polished everything else is.
+bucket-classifier: 0.14
+
+# Online presence is the modern phone reference. Recruiters
+# Google senior candidates BEFORE opening the CV; a blank
+# surface is near-disqualifying at Director+ and above.
+google-test: 0.12
+
+# Services-firm tenure (Wipro / TCS / Accenture shape) triggers
+# a silent downgrade at product companies and in the West. The
+# effect compounds at senior levels where "peer review" starts
+# mattering more than role history.
+it-services-discount: 0.10
+
+# Theater postings (pre-filled internal roles, JDs that exist
+# only to satisfy policy) explain a large share of "no callback"
+# outcomes that have nothing to do with the candidate. Detecting
+# them early prevents wasted applications.
+posting-decoder: 0.10
+
+# The 6-second recruiter filter applied to every CV. Weaker
+# weight than `bucket-classifier` because a bad headline is
+# easy to fix in an afternoon; a bad bucket is not.
+headline-filter: 0.08
+
+
+# ------------------------------------------------------------
+# Tier B — channel / funnel math       (subtotal: 0.24)
+# ------------------------------------------------------------
+
+# Channel mismatch is a huge silence driver at senior level.
+# Easy Apply for Principal / Director roles is mostly noise;
+# referrals and direct DMs carry most of the actual signal.
+channel-mix: 0.10
+
+# Funnel math flags whether your application-to-callback rate
+# is abnormal given benchmarks. Slightly lower than
+# `channel-mix` because it returns UNKNOWN for first-time users
+# with no applications log yet — weight reflects that typical
+# early-user case.
+funnel-math: 0.08
+
+# Applying late to a posting is a binary signal with an obvious
+# fix (apply sooner). Lower weight because it is coarse-grained
+# and easy to counter-act next time.
+stale-detector: 0.06
+
+
+# ------------------------------------------------------------
+# Tier C — standard CV quality         (subtotal: 0.22)
+# ------------------------------------------------------------
+
+# Classic ATS score. Still matters for first-pass keyword
+# parsing, especially at non-product companies and staffing-
+# agency-fronted postings.
+ats-simulator: 0.08
+
+# First-scan impression — companies, tenure, trajectory.
+# Deliberately weighted equal to `ats-simulator` so their
+# independent signals can differ without one dominating
+# automatically. A CV can pass ATS and still fail 30-sec read.
+recruiter-30sec: 0.08
+
+# Hiring-manager deep-read (decisions owned vs. activities
+# performed). Valuable signal but partially overlaps with
+# `bucket-classifier` at senior roles — the lower weight
+# reflects that overlap so the signal isn't double-counted.
+hm-deep-read: 0.06
+
+
+# ------------------------------------------------------------
+# Validation
+# ------------------------------------------------------------
+# Tier A: 0.14 + 0.12 + 0.10 + 0.10 + 0.08 = 0.54
+# Tier B: 0.10 + 0.08 + 0.06               = 0.24
+# Tier C: 0.08 + 0.08 + 0.06               = 0.22
+# ────────────────────────────────────────────────
+# Total:                                     1.00  ✓

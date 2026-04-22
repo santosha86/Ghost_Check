@@ -1,0 +1,94 @@
+# ============================================================
+# GhostCheck — User Profile (example)
+# ============================================================
+#
+# This file tells the agents what "target role" means for YOU. It is
+# the STRUCTURED counterpart to profile/style.md — same user, two
+# files: YAML for machine-readable targets, markdown for prose
+# constraints.
+#
+# To use:
+#   1. Copy this file to `config/profile.yml`
+#   2. Edit the values below to match your situation
+#   3. Keep `config/profile.yml` in sync with `profile/style.md`
+#
+# The schema is formally defined in docs/SCHEMAS.md §8 (UserProfile).
+# Do not invent fields — the aggregator will reject unknown keys.
+#
+# Persona below: Rohan Mehta (fictional). Matches profile/cv.example.md
+# and profile/style.example.md.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# REQUIRED FIELDS
+# ------------------------------------------------------------
+
+# Target job titles. The agents (especially `bucket-classifier` and
+# `headline-filter`) use this to benchmark whether the CV's current
+# title and bullets match where you want to be.
+#
+# Minimum 1 entry. List the real titles you would accept — don't
+# pad with aspirational titles you wouldn't actually take.
+target_titles:
+  - "Principal AI Architect"
+  - "Director of AI"
+  - "VP of AI"
+  - "Head of AI Platform"
+
+# Target locations. Use "remote" for fully remote, or city names
+# for on-site / hybrid targets. The `channel-mix` agent weighs
+# location against posted-channel to flag mismatches.
+#
+# Minimum 1 entry.
+target_locations:
+  - "remote"
+  - "Riyadh"
+  - "Dubai"
+  - "Abu Dhabi"
+  - "Doha"
+  - "London"
+  - "San Francisco"
+  - "New York"
+
+# Target seniority band. Drives `bucket-classifier` verdicts
+# directly. This is the SENIORITY (scope / accountability) axis,
+# NOT the IC-vs-manager axis — the IC-vs-manager preference goes
+# in profile/style.md as prose.
+#
+# Enum values (pick exactly one):
+#   mid | senior | staff | principal | director | vp
+target_seniority: principal
+
+
+# ------------------------------------------------------------
+# OPTIONAL FIELDS
+# ------------------------------------------------------------
+
+# Target company types. Used for audit emphasis — e.g. if you
+# target `product + startup`, the `it-services-discount` agent
+# weights its verdict higher when your CV is services-heavy.
+#
+# Enum values (any subset):
+#   product | services | consulting | bigtech | startup | other
+#
+# Omit this field entirely to let agents treat all company types
+# equally.
+target_company_types:
+  - product
+  - startup
+  - bigtech
+
+# Preferred application channels. Feeds `channel-mix` benchmarks —
+# the agent flags a mismatch if your channel distribution (from
+# applications/*/channel.md files) skews away from what you prefer.
+#
+# Common values (free-form strings, not enum-constrained in V1):
+#   referral | dm | exec-search | easy-apply | recruiter-inbound |
+#   company-career-page
+#
+# Omit this field to let `channel-mix` use only industry benchmarks.
+preferred_channels:
+  - referral
+  - dm
+  - exec-search

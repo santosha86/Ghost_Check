@@ -6,3 +6,17 @@ old_req/
 
 # Claude Code per-user settings (personal, not shared)
 .claude/settings.local.json
+
+# User's real CV and personal context — PRIVATE, never committed
+profile/cv.md
+profile/cv.pdf
+profile/cv.docx
+profile/style.md
+
+# User's actual applications (contains real CVs, JDs, outcomes) — PRIVATE
+applications/*/
+!applications/README.md
+!applications/.gitkeep
+
+# JD files the user is auditing — default to private unless explicitly public
+jobs/
