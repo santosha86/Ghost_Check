@@ -39,7 +39,7 @@ Most of my career has been IT-services delivery — embedded in client enterpris
 
 ## Compensation and notice
 
-**Salary floor:** roughly SAR 50,000 per month base in the Gulf (≈ USD 160,000/year), or USD 220,000/year base equivalent in the US. Bonus and equity on top. I'm flexible on the base-vs-bonus-vs-equity split for the right company, but not on the total-comp floor.
+**Salary floor:** roughly SAR 50,000 per month base in the Gulf (about USD 160,000/year), or USD 220,000/year base equivalent in the US. Bonus and equity on top. I'm flexible on the base-vs-bonus-vs-equity split for the right company, but not on the total-comp floor.
 
 **Notice period:** 60–90 days from my current employer. Roles that require a sub-30-day start are a soft no — I'd rather start correctly than rush.
 

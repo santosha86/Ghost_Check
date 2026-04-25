@@ -53,7 +53,7 @@ docs/
   SCHEMAS.md                  — the AgentVerdict contract (Pydantic-ready)
   HARNESS_ENGINEERING.md      — why the harness is the moat
   ZERO_TRUST.md               — security principles
-  ROADMAP.md                  — V1 → V1.1 → V1.2 → V2
+  ROADMAP.md                  — V1 to V1.1 to V1.2 to V2
 profile/                      — user CV, style, and examples
 config/                       — profile.yml, weights.yml
 applications/                 — one folder per audit (generated)

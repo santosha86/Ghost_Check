@@ -3,14 +3,14 @@
 # ============================================================
 #
 # These weights drive the weighted-logistic aggregator (see
-# docs/SCHEMAS.md §13). Each of the 11 agents gets a weight in
+# docs/SCHEMAS.md section 13). Each of the 11 agents gets a weight in
 # the range [0.0, 1.0]; the 11 weights MUST sum to 1.0.
 #
 # WHY THIS FILE MATTERS
 # ---------------------
 # The aggregator combines 11 independent verdicts into one
 # callback probability. If all agents had equal weight
-# (1 / 11 ≈ 0.091), a LOW-severity keyword mismatch would count
+# (1 / 11 about 0.091), a LOW-severity keyword mismatch would count
 # the same as a CRITICAL-severity seniority mismatch — which is
 # wrong. These weights encode the *relative importance* of each
 # silence driver, based on what actually gets senior candidates
@@ -23,23 +23,23 @@
 #   Tier A — invisible failure agents (the differentiators
 #   that no existing CV checker measures). Weighted heaviest
 #   because these are the dimensions that actually drive senior
-#   silence. Total ≈ 0.54.
+#   silence. Total about 0.54.
 #
 #   Tier B — channel / funnel math agents. Medium weight.
 #   Valuable, but maximally useful only once the user has built
-#   up an applications log. Total ≈ 0.24.
+#   up an applications log. Total about 0.24.
 #
 #   Tier C — standard CV quality signals. Lower weight because
 #   these are table stakes that every CV checker already covers —
 #   they are not where GhostCheck's differentiation lives.
-#   Total ≈ 0.22.
+#   Total about 0.22.
 #
 # UNKNOWN HANDLING
 # ----------------
 # When an agent emits UNKNOWN (e.g. `funnel-math` without an
 # applications log, or `posting-decoder` without a posted_date),
 # that agent's weight is redistributed proportionally across the
-# remaining non-UNKNOWN agents at runtime. See SCHEMAS.md §13.
+# remaining non-UNKNOWN agents at runtime. See SCHEMAS.md section 13.
 #
 # You do NOT need to re-normalise these weights yourself to
 # handle missing data. The aggregator does it at runtime.
@@ -147,5 +147,5 @@ hm-deep-read: 0.06
 # Tier A: 0.14 + 0.12 + 0.10 + 0.10 + 0.08 = 0.54
 # Tier B: 0.10 + 0.08 + 0.06               = 0.24
 # Tier C: 0.08 + 0.08 + 0.06               = 0.22
-# ────────────────────────────────────────────────
-# Total:                                     1.00  ✓
+# ------------------------------------------------
+# Total:                                     1.00  (validated)

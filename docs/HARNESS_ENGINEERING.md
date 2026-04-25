@@ -66,7 +66,7 @@ This is the harness's anti-hallucination layer.
 
 An LLM aggregator is tempting. It could "explain" its weighting. It could notice that two agents surfaced the same root cause. It could write prettier prose. It could also overrule a CRITICAL verdict because it seemed "too harsh." It could round 34% to "around a third" and lose audit-reproducibility. It could invent a silence driver that no agent surfaced. Any of those behaviours would be impossible to audit — you would never know whether the user's score moved because the evidence changed or because the LLM was in a different mood that afternoon.
 
-A math aggregator cannot do any of these things. If a callback probability moves from 34% to 41% between two audits, exactly one of three things happened: a weight was tuned, a verdict changed severity, or an UNKNOWN became a non-UNKNOWN (see `SCHEMAS.md §13` on weight renormalisation). That is it. The system is deterministic by construction, and determinism here is the difference between a diagnostic tool you can stake a job search on and an oracle you cannot.
+A math aggregator cannot do any of these things. If a callback probability moves from 34% to 41% between two audits, exactly one of three things happened: a weight was tuned, a verdict changed severity, or an UNKNOWN became a non-UNKNOWN (see `SCHEMAS.md section 13` on weight renormalisation). That is it. The system is deterministic by construction, and determinism here is the difference between a diagnostic tool you can stake a job search on and an oracle you cannot.
 
 > **An orchestrator with opinions is just a twelfth agent in a trench coat.**
 

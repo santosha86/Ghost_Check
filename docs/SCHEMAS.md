@@ -19,7 +19,7 @@ Every one of the 11 agents produces exactly one `AgentVerdict` per audit run.
 
 | Field          | Type                          | Required | Constraint                                                                  |
 |----------------|-------------------------------|----------|-----------------------------------------------------------------------------|
-| `agent_id`     | `AgentId` (enum, 11 values)   | yes      | One of the known agent IDs (see §2).                                        |
+| `agent_id`     | `AgentId` (enum, 11 values)   | yes      | One of the known agent IDs (see section 2).                                        |
 | `severity`     | `Severity` (enum, 5 values)   | yes      | `CRITICAL` \| `HIGH` \| `MEDIUM` \| `LOW` \| `UNKNOWN`.                     |
 | `score`        | `float`                       | yes      | `0.0` ≤ score ≤ `1.0`. Ignored by the aggregator when severity is UNKNOWN. |
 | `verdict`      | `string` (markdown)           | yes      | 1–2 sentences. Human-readable summary.                                      |
@@ -100,7 +100,7 @@ LOW         Minor polish; nice to have.
 UNKNOWN     Agent could not assess — see unknown_reason.
 ```
 
-The aggregator maps `CRITICAL=1.0`, `HIGH=0.75`, `MEDIUM=0.5`, `LOW=0.25`, `UNKNOWN` = excluded (weights redistributed, §11).
+The aggregator maps `CRITICAL=1.0`, `HIGH=0.75`, `MEDIUM=0.5`, `LOW=0.25`, `UNKNOWN` = excluded (weights redistributed, section 11).
 
 ---
 
@@ -132,7 +132,7 @@ Built once per audit by the enrichment skills. Passed (read-only) to every agent
 
 ## 6. `Company` — the hybrid enrichment object
 
-Built by the `company-enricher` skill, which takes (a) any user-provided fields from the JD YAML header (§10), and (b) fills gaps via web search on the public internet. **LinkedIn direct scraping is not used** — it is gated behind login and unreliable; we rely on Google-cached snippets, company About pages, and third-party sources.
+Built by the `company-enricher` skill, which takes (a) any user-provided fields from the JD YAML header (section 10), and (b) fills gaps via web search on the public internet. **LinkedIn direct scraping is not used** — it is gated behind login and unreliable; we rely on Google-cached snippets, company About pages, and third-party sources.
 
 | Field            | Type                                                                                     | Required | Notes                                                   |
 |------------------|------------------------------------------------------------------------------------------|----------|---------------------------------------------------------|
@@ -142,7 +142,7 @@ Built by the `company-enricher` skill, which takes (a) any user-provided fields 
 | `industry`       | `string`                                                                                 | optional | e.g., `"fintech"`.                                      |
 | `funding_stage`  | `string`                                                                                 | optional | e.g., `"Series B"`, `"public"`, `"bootstrapped"`.       |
 | `company_type`   | enum: `product` \| `services` \| `consulting` \| `bigtech` \| `startup` \| `other` \| `unknown` | yes | Output of the classifier step.                          |
-| `sources`        | `dict[field_name → SourceTag]`                                                           | yes      | Per-field provenance. See below.                        |
+| `sources`        | `dict[field_name to SourceTag]`                                                           | yes      | Per-field provenance. See below.                        |
 
 ### `SourceTag` enum (per-field provenance)
 
@@ -232,7 +232,7 @@ Every audit run produces a folder at `applications/YYYY-MM-DD_<jd-slug>/`. Conte
 
 | File           | Written by | Required | Purpose                                                     |
 |----------------|------------|----------|-------------------------------------------------------------|
-| `audit.md`     | aggregator | yes      | The final human-readable audit. See §11 for its contract.   |
+| `audit.md`     | aggregator | yes      | The final human-readable audit. See section 11 for its contract.   |
 | `verdicts.json`| aggregator | yes      | All 11 `AgentVerdict` objects, raw. For tooling / B-tier agents to re-read later. |
 | `context.json` | aggregator | yes      | The `ExternalContext` used for this run. Auditability.     |
 | `outcome.md`   | **user, optional** | no | One line: `callback`, `screened`, `rejected`, or `ghosted`, plus date. Input to B1 funnel-math in future audits. |
@@ -288,7 +288,7 @@ The "Not assessed" section is required whenever any verdict is UNKNOWN — even 
 
 When the aggregator receives an `AgentVerdict` from an agent:
 
-1. Validate against the schema in §1.
+1. Validate against the schema in section 1.
 2. On any validation failure (missing required field, wrong type, out-of-range score, empty evidence on non-UNKNOWN, etc.), coerce to:
    ```json
    {

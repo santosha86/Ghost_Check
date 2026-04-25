@@ -12,7 +12,7 @@
 #   2. Edit the values below to match your situation
 #   3. Keep `config/profile.yml` in sync with `profile/style.md`
 #
-# The schema is formally defined in docs/SCHEMAS.md §8 (UserProfile).
+# The schema is formally defined in docs/SCHEMAS.md section 8 (UserProfile).
 # Do not invent fields — the aggregator will reject unknown keys.
 #
 # Persona below: Rohan Mehta (fictional). Matches profile/cv.example.md

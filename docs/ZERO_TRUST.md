@@ -33,7 +33,7 @@ Each principle is expanded below.
 
 ### Principle 1 — Verify explicitly
 
-Every verdict produced by every agent is validated against the `AgentVerdict` schema in `SCHEMAS.md` before it is allowed to reach the aggregator. The verification is structural (required fields, correct types, score within range), typed (severity must be one of the five enum values), and evidential (non-UNKNOWN verdicts must carry at least one `Evidence` item). A verdict that fails any of these checks is not "repaired" by the harness — it is coerced to `UNKNOWN` with a schema-violation reason, exactly as specified in `SCHEMAS.md §12`.
+Every verdict produced by every agent is validated against the `AgentVerdict` schema in `SCHEMAS.md` before it is allowed to reach the aggregator. The verification is structural (required fields, correct types, score within range), typed (severity must be one of the five enum values), and evidential (non-UNKNOWN verdicts must carry at least one `Evidence` item). A verdict that fails any of these checks is not "repaired" by the harness — it is coerced to `UNKNOWN` with a schema-violation reason, exactly as specified in `SCHEMAS.md section 12`.
 
 The significance of this is that the harness refuses to distinguish between a malicious agent and a buggy one. Both produce verdicts that fail validation. Both are handled identically: UNKNOWN, with the reason surfaced to the user in the audit's "Not assessed" section. No special casing. No silent recovery. This is the point of verification-explicit: the system does not care whether a bad verdict came from an attacker or from an honest mistake — the response is the same.
 
@@ -48,7 +48,7 @@ Every agent declares its capabilities in YAML frontmatter at the top of its `.md
 Concretely:
 
 - `google-test` declares `capabilities: [web_search]`. It is the only agent that may call the `google-test-lookup` enrichment skill. When it runs, it does.
-- `bucket-classifier` declares `capabilities: []`. It reads the CV, the JD, and `ExternalContext`. It may not call web search, may not call the company enricher, may not touch anything else. If the agent prompt somehow asks for a web search anyway — through prompt injection, or contributor error — the harness must refuse. In V1 this refusal is by convention (Claude Code honors the frontmatter); in V1.2+ a runtime policy engine enforces it unconditionally (see §5 below).
+- `bucket-classifier` declares `capabilities: []`. It reads the CV, the JD, and `ExternalContext`. It may not call web search, may not call the company enricher, may not touch anything else. If the agent prompt somehow asks for a web search anyway — through prompt injection, or contributor error — the harness must refuse. In V1 this refusal is by convention (Claude Code honors the frontmatter); in V1.2+ a runtime policy engine enforces it unconditionally (see section 5 below).
 
 Capabilities are *granted by enumeration*, not *denied by blacklist*. If a capability is not in the list, it is not available. The default is nothing. This matters because it inverts the common anti-pattern where agents have broad access "just in case" and then get their permissions trimmed later. GhostCheck trims nothing. Each agent starts with zero and is granted exactly what it needs, line by frontmatter line.
 
@@ -98,7 +98,15 @@ A Zero Trust claim without scope limits is a lie of omission. Four things this p
 
 **It does not hide your CV from Claude.** You send your CV text to the Claude API every time an audit runs. That is the contract of using an LLM-backed tool. Anthropic's privacy terms govern what happens to that text on their side. If the contents of your CV are sensitive beyond what Anthropic's terms cover, redact before you submit. Zero Trust here protects against agents misusing the CV. It does not protect the CV from being read by the underlying model.
 
-**It does not fully defend against indirect prompt injection (XPIA).** A JD can contain text crafted to manipulate the agents reading it. Our partial defenses — fan-out (compromise of one agent cannot propagate), schema validation (malformed output becomes UNKNOWN), capability declarations (a compromised agent cannot reach tools it was not granted) — significantly reduce the blast radius but do not eliminate the risk. A cleverly-crafted JD can make one agent return a wrong but schema-valid verdict. That verdict will appear in the final audit, cited, and the user can see and dismiss it. V1.2+ adds input sanitization and adversarial-text detection; V1 relies on the user's own reading of the evidence.
+**It does not fully defend against indirect prompt injection (XPIA).** A JD can contain text crafted to manipulate the agents reading it. V1's defences are partial but layered — five mechanisms that compound:
+
+- **Fan-out architecture** — compromise of one agent cannot propagate; the other ten agents reading the same JD form independent verdicts.
+- **Schema validation** — structurally malformed output is rejected at the aggregator boundary.
+- **Fail-closed coercion** — any rejected verdict is converted to UNKNOWN with a reason; never patched up.
+- **Capability declarations** — a compromised agent cannot reach tools its frontmatter does not grant.
+- **Evidence-citation requirement** — every non-UNKNOWN verdict must carry at least one quoted `Evidence` item with source and location, raising the bar for forged verdicts.
+
+These five together significantly reduce the blast radius, but do not eliminate the risk. A cleverly-crafted JD can still make one agent return a wrong but schema-valid verdict; that verdict will appear in the final audit, cited, and the user can see and dismiss it. **V1.1 will add evidence verification** — every cited quote must literally exist in the source it claims to come from, which catches the most common forged-quote attack. **V1.2+** adds input sanitisation and adversarial-text detection. V1 relies on the user's own reading of the evidence as the final defence.
 
 **It does not protect against a malicious fork.** Anyone can fork GhostCheck, strip the frontmatter capability declarations, rewrite the aggregator to be an LLM, delete the schema validation step, and call the result "GhostCheck." The rules in this document govern *this repository*. A user who runs a fork is trusting whoever published the fork, not us. This is the inherent limit of open-source security posture and is the same limit every open-source project faces.
 

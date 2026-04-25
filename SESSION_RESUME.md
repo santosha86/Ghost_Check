@@ -7,7 +7,7 @@
 
 ---
 
-## ⚡ Quick start — Santosh, copy-paste this into your next Claude Code session
+## Quick start — Santosh, copy-paste this into your next Claude Code session
 
 When you open Claude Code (web or desktop) on a new machine and connect it to this repo, paste the block below as your very first message. Nothing else is needed.
 
@@ -104,7 +104,7 @@ From the Multi-Agent Solutions 101 preamble on 2026-04-21:
 - **Skill** — markdown file that defines an agent, with YAML frontmatter + prompt body.
 - **Skill pack** — folder of skill files; the project IS the pack.
 - **Orchestration** — deciding which agent runs when (Claude Code does this for us).
-- **Fan-out** — one input → many parallel agents → one aggregator; keeps agents blind to each other.
+- **Fan-out** — one input to many parallel agents to one aggregator; keeps agents blind to each other.
 - **AgentVerdict** — the fixed-shape output every agent must return (`agent_id`, `severity`, `score`, `verdict`, `evidence`, `fix_hints`).
 - **Aggregator** — deterministic math (not an LLM) combining verdicts into a final score.
 - **Fail-closed** — on any failure, return `UNKNOWN`; never hallucinate.
@@ -116,7 +116,7 @@ From the Multi-Agent Solutions 101 preamble on 2026-04-21:
 - **Double agents** (Microsoft term) — overprivileged or manipulated agents that look like yours but act on someone else's inputs. The threat pattern that motivates capability declarations.
 - **Lateral movement (in multi-agent context)** — one agent's opinion leaking into another's reasoning. Prevented by fan-out (agents never see each other's outputs).
 - **XPIA / indirect prompt injection** — attacker-controlled text in inputs (e.g. a crafted JD) that manipulates the LLM. Partial V1 defences via schema validation + capability declarations; full input sanitisation is V1.2+.
-- **Provenance** — chain of custody from input to output; per-field source tagging (e.g. `Company.sources` in `SCHEMAS.md §6`) is the concrete expression.
+- **Provenance** — chain of custody from input to output; per-field source tagging (e.g. `Company.sources` in `SCHEMAS.md section 6`) is the concrete expression.
 - **DSPy + GEPA** — prompt-evolution stack. DSPy compiles prompt programs; GEPA (Genetic-Pareto Prompt Evolution, ICLR 2026 Oral) mutates prompt text against execution traces, reads *why* failures happened, keeps winners. The technique Hermes Agent uses for self-evolution; target for GhostCheck V1.1.
 - **Sources of Truth table** — doc/code pattern: enumerate every input file with `{File | Path | When | Precedence}`. Santifer's `modes/_shared.md` is the canonical example. Useful as a general doc convention.
 - **Bundle-and-dispatch vs two-hop loading** (Claude Code skill idioms) — router either (a) reads all user-layer files once and passes declared inputs to each agent, or (b) references a shared context file that in turn references user-layer files. GhostCheck uses (a); santifer uses (b). Both are valid.
@@ -127,16 +127,42 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 6. Session log (what was done, newest first)
 
+### 2026-04-25 (third session — personal laptop, Day 2 prep)
+
+- Reviewed all Day 1 work in detail. Quality: high. No content rework needed.
+- **Symbol sweep across all my files** — replaced section signs, arrows, approximation symbols, checkmarks, box-drawing characters, and the one stray emoji with plain English. Build prompt itself untouched (Santosh's spec). 40 replacements across 8 files. Driven by Santosh's feedback that AI-styling tics add reader friction in a plain-text project. Saved as a memory rule for future work.
+- **Architectural decision locked: Pattern B (subagent isolation per agent)** for the router-to-agent dispatch. Each of the 11 agents runs in its own isolated context window. The router builds the per-agent input bundle once, then invokes each agent via Claude Code's Agent tool (V1) or via separate API calls in any future runtime (Python service, Gemini CLI, Ollama). Pattern A (sequential reads in a shared context window) was rejected because it semantically breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context, producing dependent verdicts that look independent — the worst possible outcome.
+- **Architectural decision locked: Input validation Levels 1 plus 3.** Level 1 = file-extension check at the start of an audit, rejecting unsupported types before parsing. Level 3 = LLM classification call after MarkItDown parsing, asking "is this a CV / is this a JD" with a confidence score, fail-closed if confidence is low. Level 2 (content-keyword heuristics) was rejected because Santosh's real JD is a PowerPoint deck, on which heuristic header-matching breaks. The LLM classifier handles decks and PDFs identically.
+- **Real CV and JD organised into the audit-ready paths.** `CV_StrategyAnd_AI_Lead.pdf` moved to `profile/cv.pdf` (gitignored). `Strategy&_AI Solution Architect - JD - Chief.pptx` moved to `jobs/strategy-ai-architect-chief.pptx` (jobs directory gitignored). The PowerPoint format is real-world signal that the parser must handle .pptx via MarkItDown — confirmed MarkItDown supports it.
+- **Slug naming convention adopted for filenames in `jobs/` and `applications/`** — lowercase, hyphens for word boundaries, no special characters. Avoids shell-quoting hassles, cross-platform issues, and downstream tool breakage.
+- New feedback memory: explain alternatives deeply BEFORE asking Santosh to choose, not after. Each option presented as a full paragraph showing what it does mechanically and what its consequences are in practice.
+
+**Files authored or updated this session (push-able from this machine):**
+
+- `CLAUDE.md` — symbol sweep
+- `docs/SCHEMAS.md` — symbol sweep
+- `docs/HARNESS_ENGINEERING.md` — symbol sweep
+- `docs/ZERO_TRUST.md` — symbol sweep AND XPIA "does NOT promise" paragraph expanded with five layered defences plus V1.1 evidence-verification roadmap mention
+- `profile/style.example.md` — symbol sweep
+- `config/profile.example.yml` — symbol sweep
+- `config/weights.yml` — symbol sweep
+- `SESSION_RESUME.md` — symbol sweep, this 2026-04-25 entry, and Pattern B / Input Validation locked-conventions added to section 7
+
+**Files moved (gitignore-protected, not visible in git status):**
+
+- `profile/cv.pdf` (Santosh's real CV — was at project root)
+- `jobs/strategy-ai-architect-chief.pptx` (Santosh's real JD — was at project root)
+
 ### 2026-04-22 (later session — personal laptop)
 
-- Resumed on personal laptop after the web-Claude session (same calendar date, different machine). Audited the 4 files authored in web Claude (`README.md`, `LICENSE`, `CLAUDE.md`, `docs/SCHEMAS.md`). Quality: high. Minor polish fixes applied: (a) `LICENSE` copyright → `Achanta Santosh Kumar` (full legal name); (b) `README.md` footnote clarifying that `A`/`B`/`C` are tier prefixes / filename prefixes, not the `agent_id` value stored in `AgentVerdict`.
+- Resumed on personal laptop after the web-Claude session (same calendar date, different machine). Audited the 4 files authored in web Claude (`README.md`, `LICENSE`, `CLAUDE.md`, `docs/SCHEMAS.md`). Quality: high. Minor polish fixes applied: (a) `LICENSE` copyright to `Achanta Santosh Kumar` (full legal name); (b) `README.md` footnote clarifying that `A`/`B`/`C` are tier prefixes / filename prefixes, not the `agent_id` value stored in `AgentVerdict`.
 - **Wrote `docs/HARNESS_ENGINEERING.md`** — 5-pillar structure (one schema / blind agents / deterministic aggregator / markdown-first / skill-pack distribution) + "What the harness is NOT" section + closing. Voice-forward (Santosh approved voice over dry). ~210 lines. Later extended Pillar 4 with a DSPy+GEPA paragraph making the "markdown-first scales to any runtime" claim concrete.
 - **Wrote `docs/ZERO_TRUST.md`** — grounded in Microsoft's *Zero Trust for AI* framework (19 March 2026 — Santosh provided URL). Three Microsoft principles mapped to GhostCheck's four rules: *Verify explicitly* ↔ schema validation + fail-closed; *Apply least privilege* ↔ capability declarations; *Assume breach* ↔ no-agent-to-agent + no-user-file-writes. Standards chain cited (NIST + CISA + CIS + Microsoft SFI). Honest V1 vs V1.2+ split: design-time enforcement today, runtime policy engine later. Microsoft's *Zero Trust Assessment for AI* pillar is in development (summer 2026) — so we align with principles, not with yet-to-exist control IDs. ~175 lines.
 - **Research: Nous Research *Hermes Agent Self-Evolution* (April 2026).** Real project, MIT-licensed, ~65K stars, ICLR 2026 Oral paper on GEPA. Architecture: DSPy + GEPA mutates skill prompts / tool descriptions / configs against execution traces; outperforms GRPO by 6-20% with ~35× fewer rollouts. **Key fit:** GhostCheck's `applications/<date_slug>/outcome.md` + `verdicts.json` are exactly the execution-trace shape GEPA expects — zero schema rework needed to integrate on V1.1.
-- **Research: how santifer/career-ops actually loads user-layer files.** First round was inferential; Santosh pushed back; second round verified against source. Actual pattern is **two-hop**: `SKILL.md` → `modes/_shared.md` (a "Sources of Truth" table) → user-layer files (`cv.md`, `config/profile.yml`, `modes/_profile.md`, `article-digest.md`). Uses explicit imperative "Read X at evaluation time" instructions.
+- **Research: how santifer/career-ops actually loads user-layer files.** First round was inferential; Santosh pushed back; second round verified against source. Actual pattern is **two-hop**: `SKILL.md` to `modes/_shared.md` (a "Sources of Truth" table) to user-layer files (`cv.md`, `config/profile.yml`, `modes/_profile.md`, `article-digest.md`). Uses explicit imperative "Read X at evaluation time" instructions.
 - **Decision: for GhostCheck, use Path 1 (Bundle-and-dispatch).** Router (`SKILL.md`) reads all user-layer files once and dispatches to each agent with exactly the inputs its frontmatter declares (`cv_text`, `jd_text`, `user_profile`, `user_style`, `external_context`). Cleaner for our "agents declare inputs in frontmatter" principle than santifer's two-hop. No change to `SCHEMAS.md` — `user_style` is opaque markdown string at agent-input level.
 - **Updated `.gitignore`** — pre-emptively protects `profile/cv.md`, `profile/style.md`, `profile/cv.pdf`, `profile/cv.docx`, `applications/*/`, `jobs/` from accidental commits. `applications/README.md` + `.gitkeep` still allowed.
-- **Wrote `profile/cv.example.md`** — fictional "Rohan Mehta" persona scrubbed from Santosh's real CV. Client names genericized (`SABIC → a Gulf petrochemical major`; `Aramco → a national oil & gas operator`; `SEC → a national utilities operator`; `STC → a national telecom operator`; `BSNL → an Indian telecom operator`). Employer names invented (`Gulf AI Advisory`, `Mideast Tech Partners`, `International Tech Services`). Dates shifted back 1 year for identifiability hedge. All bullets, technical vocabulary, and metrics preserved. HTML-comment preamble marks it as fictional.
+- **Wrote `profile/cv.example.md`** — fictional "Rohan Mehta" persona scrubbed from Santosh's real CV. Client names genericized (`SABIC to a Gulf petrochemical major`; `Aramco to a national oil & gas operator`; `SEC to a national utilities operator`; `STC to a national telecom operator`; `BSNL to an Indian telecom operator`). Employer names invented (`Gulf AI Advisory`, `Mideast Tech Partners`, `International Tech Services`). Dates shifted back 1 year for identifiability hedge. All bullets, technical vocabulary, and metrics preserved. HTML-comment preamble marks it as fictional.
 
 **Design decisions locked this session (affect Day-2 work):**
 
@@ -162,7 +188,7 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 - `README.md` — UPDATED (tier-label footnote)
 - `SESSION_RESUME.md` — UPDATED (this file)
 
-**Day 1 is COMPLETE (10 of 10 files done).** All eight file blocks from build prompt §11 are in the repo.
+**Day 1 is COMPLETE (10 of 10 files done).** All eight file blocks from build prompt section 11 are in the repo.
 
 ### 2026-04-22 (early session — web sandbox, company laptop)
 
@@ -217,22 +243,22 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
-**Day 1 is COMPLETE (10 of 10 files done — 100%).** All documentation, examples, and config files from build prompt §11 Day 1 are in the repo.
+**Day 1 is COMPLETE (10 of 10 files done — 100%).** All documentation, examples, and config files from build prompt section 11 Day 1 are in the repo.
 
 ```
-README.md                              ✅
-LICENSE                                ✅
-CLAUDE.md                              ✅
-docs/SCHEMAS.md                        ✅
-docs/HARNESS_ENGINEERING.md            ✅  (+ GEPA paragraph)
-docs/ZERO_TRUST.md                     ✅
-profile/cv.example.md                  ✅
-profile/style.example.md               ✅
-config/profile.example.yml             ✅
-config/weights.yml                     ✅  (the only runtime-required Day-1 file)
+README.md                              (done)
+LICENSE                                (done)
+CLAUDE.md                              (done)
+docs/SCHEMAS.md                        (done)
+docs/HARNESS_ENGINEERING.md            (done)  (+ GEPA paragraph)
+docs/ZERO_TRUST.md                     (done)
+profile/cv.example.md                  (done)
+profile/style.example.md               (done)
+config/profile.example.yml             (done)
+config/weights.yml                     (done)  (the only runtime-required Day-1 file)
 ```
 
-**Next up: Day 2.** Build prompt §11 Day 2 scope:
+**Next up: Day 2.** Build prompt section 11 Day 2 scope:
 
 ```
 .claude/skills/ghostcheck/SKILL.md             — the /ghostcheck router
@@ -256,10 +282,12 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 - **Agent frontmatter `inputs:` convention** — drawn from `{cv_text, jd_text, user_profile, user_style, external_context}`. Agents omit inputs they don't need (e.g. `ats-simulator` likely omits `user_style`). The router passes *only* declared inputs to each agent. This is Path 1 (Bundle-and-dispatch); it does NOT require a schema change to `SCHEMAS.md`.
 - **`bucket-classifier` and `hm-deep-read` use temperature 0.3**; all other agents use 0.1. Max tokens per agent: 800. These values live in each agent's YAML frontmatter.
 - **Santosh's real CV goes in `profile/cv.md`** (gitignored, never pushed). The example at `profile/cv.example.md` is a fallback only.
+- **Agent invocation pattern: Pattern B (subagent isolation)**, locked 2026-04-25. The router invokes each agent in a fresh, isolated context window so no agent sees another agent's verdict. In Claude Code V1 this uses the built-in Agent tool; future runtimes (Python service, Gemini CLI, Ollama) replicate by making one separate API call per agent. Pattern A (sequential reads in a shared context) was rejected because it breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context window, producing dependent verdicts that look independent. The semantic requirement of the SKILL.md is "invoke each agent in isolation"; the runtime supplies the implementation.
+- **Input validation: Levels 1 + 3**, locked 2026-04-25. Level 1 (file-extension check) runs at the start of an audit and rejects unsupported types (e.g., `.png`, `.zip`) before parsing. Level 3 (LLM classification call) runs after MarkItDown parses the document and asks the model to confirm whether the input is a CV / a JD with a confidence score, fail-closed if confidence is low. Level 2 (content-keyword heuristics) was rejected because it false-positives on non-standard formats — Santosh's real JD is a PowerPoint deck, where heuristic header-matching breaks. The LLM classifier handles the deck and a normal PDF JD identically.
 
 **Other deferred items:**
 
-- **After Day 2 is stable**: create empty structural folders (`applications/`, `patterns/`, `wiki/`) with `.gitkeep` + `README.md` placeholders. Referenced in `CLAUDE.md §4` but not yet present on disk.
+- **After Day 2 is stable**: create empty structural folders (`applications/`, `patterns/`, `wiki/`) with `.gitkeep` + `README.md` placeholders. Referenced in `CLAUDE.md section 4` but not yet present on disk.
 - **Day 5 `ROADMAP.md` content is pre-captured** — see "For Day 5" block in section 6 above. Contains the full Hermes/GEPA V1.1 entry and the Microsoft Observability V1.2/V2 reference.
 
 **Open taste / scope questions Santosh has not yet decided** (low urgency, flag at Day 2 kickoff):
