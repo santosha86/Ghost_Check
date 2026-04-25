@@ -288,6 +288,27 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 Day 2 closed cleanly on 2026-04-25. End-to-end validation passed (see section 6 for full results). The first audit landed at `applications/2026-04-25_strategy-ai-architect-chief/audit.md` with bucket-classifier reporting LOW severity and the aggregator computing 64.6% callback probability — too optimistic for the known ghosted outcome, which is expected because ten of eleven agents have not yet been written. Day 3 fixes that.
 
+### First action tomorrow (before Day 3 file writes): a five-minute ground-truth check
+
+Santosh was ghosted on this exact CV+JD pair. He has real-world knowledge about WHY that the audit cannot see directly. Before writing Day 3 agents, walk him through this short exercise:
+
+**Step 1 — read the audit.** Open `applications/2026-04-25_strategy-ai-architect-chief/audit.md` (or its content if you are on web sandbox where that file is not visible — you can recreate it in chat from `verdicts.json` and `context.json` which Santosh can paste in if needed). The relevant section is "Not assessed (not yet implemented)" which lists ten agents.
+
+**Step 2 — among those ten, four are most likely the real silence drivers for THIS specific application:**
+
+- `it-services-discount` (planned Day 3) — would assess whether tenure at large IT-services firms (Wipro, TCS, Nor Consult in this CV) triggers a silent downgrade at top-tier consulting and product companies.
+- `channel-mix` (planned Day 4) — would assess whether the application channel (Easy Apply, referral, direct DM, exec search) matches what works at the Chief level.
+- `google-test` (planned Day 3) — would assess whether Googling the candidate's name surfaces enough thought-leadership signal to validate the JD's "thought leadership engagements" expectation.
+- `posting-decoder` (planned Day 3) — would assess whether the JD is a genuine open requisition or a theater posting (already pre-filled internally).
+
+**Step 3 — ask Santosh which one or two of these four he ACTUALLY believes was the silence driver for this specific application.** He has ground truth from his real experience: how he applied (which channel), whether anyone inside the firm signalled anything, what his online presence actually looks like vs. competitors at this seniority, whether the role was visibly filled internally before he applied. He does not have to share the answer publicly, but having it in his head shapes Day 3 priorities.
+
+**Step 4 — use his answer to choose which Day-3 agent to write FIRST.** If he believes `it-services-discount` was the driver, write that agent first so the system's accuracy is testable fastest on the next audit run. Same logic for `google-test` or `posting-decoder`. (`channel-mix` is Day 4 by build prompt order, not Day 3, so cannot be first this round.)
+
+**Step 5 — re-run `/ghostcheck audit` on the same CV+JD pair after the first Day-3 agent lands.** If the callback probability moves meaningfully (say from 64% toward 30-40%) and the new agent's verdict matches Santosh's real-world hypothesis, the system is on the right architectural track. If the probability does not move or the verdict misses the actual reason, that is a more important finding than any individual agent — it tells us the design needs adjustment, not just more agents.
+
+**Why this exercise matters more than the audit's number:** at this build state, the 64.6% probability is almost meaningless because only one of eleven agents contributed. The real validation is whether the system is identifying the right HYPOTHESIS SPACE about why Santosh was ghosted. If the four agents called out match his real-world hypothesis, the architecture is sound. If they miss the actual reason entirely, the architecture needs rethinking. This exercise checks the architecture, not the math.
+
 **Day 3 scope (per build prompt section 11):** the remaining Tier A invisible-failure agents.
 
 ```
@@ -391,6 +412,7 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
 > - **Day 2 is CLOSED (2026-04-25).** End-to-end validation passed: pipeline runs router → parser → bucket-classifier → aggregator → audit.md. First audit landed at `applications/2026-04-25_strategy-ai-architect-chief/audit.md` with 64.6% callback probability (too optimistic for the known ghosted outcome, as expected because only one of eleven agents is live).
 > - Two real-world findings were applied during validation: README and parser updated to specify `pip install 'markitdown[all]'` (with quoting for zsh); aggregator updated to surface "not yet implemented" agents in the Not-Assessed section, not just UNKNOWN.
+> - **FIRST action before Day 3 file writes: a five-minute ground-truth check.** Walk Santosh through this exercise: open the latest audit, look at the four most-likely-relevant Not-Assessed agents (it-services-discount, channel-mix, google-test, posting-decoder), and ask him which one or two he actually believes was the silence driver for this specific application. He has ground truth from his real experience that the audit cannot see directly. His answer shapes which Day-3 agent gets written first so the system's accuracy is testable fastest. Full procedure is in section 7 under "First action tomorrow." This validates the system's HYPOTHESIS SPACE matches the real silence driver, which matters more than the probability number at this build state.
 > - **ACTIVE: Day 3 — Tier A invisible-failure agents.** Build prompt section 11 Day 3 scope: `google-test`, `posting-decoder`, `it-services-discount`, `headline-filter`, plus the enrichment skills they depend on. Each follows the bucket-classifier template from Day 2.
 > - The architecture slide deck (Path 3) was pulled forward then deferred — back to Day 5 launch prep. Locked 8-slide outline still in section 6 when we get to it.
 >
