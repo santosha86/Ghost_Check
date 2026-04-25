@@ -43,12 +43,23 @@ These values live in each agent's frontmatter. If a user or contributor wants to
 ## 4. Repo layout (where things belong)
 
 ```
-.claude/skills/
-  ghostcheck/SKILL.md         — the /ghostcheck router
-  agents/A*.md, B*.md, C*.md  — the 11 agents (A = invisible-failure, B = channel/math, C = standard CV)
-  aggregator/aggregator.md    — deterministic verdict combination
-  enrichment/                 — helper skills (web search, company classification, JD age)
-  parser/markitdown-parse.md  — PDF / DOCX / HTML parsing
+.claude/skills/                    — Skills (run in the main conversation context)
+  ghostcheck/SKILL.md              — the /ghostcheck slash command router
+  aggregator/aggregator.md         — deterministic verdict combination
+  enrichment/                      — helper skills (web search, company classification, JD age)
+  parser/markitdown-parse.md       — PDF / DOCX / HTML parsing
+.claude/agents/                    — Subagents (each runs in its own isolated context window)
+  bucket-classifier.md             — A3 (Tier A: invisible-failure detection)
+  google-test.md                   — A1 (Tier A)
+  posting-decoder.md               — A2 (Tier A)
+  it-services-discount.md          — A4 (Tier A)
+  headline-filter.md               — A5 (Tier A)
+  funnel-math.md                   — B1 (Tier B: channel and funnel math)
+  channel-mix.md                   — B2 (Tier B)
+  stale-detector.md                — B3 (Tier B)
+  ats-simulator.md                 — C1 (Tier C: standard CV quality)
+  recruiter-30sec.md               — C2 (Tier C)
+  hm-deep-read.md                  — C3 (Tier C)
 docs/
   SCHEMAS.md                  — the AgentVerdict contract (Pydantic-ready)
   HARNESS_ENGINEERING.md      — why the harness is the moat

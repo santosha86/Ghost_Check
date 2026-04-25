@@ -1,6 +1,6 @@
 # GhostCheck — Session Resume
 
-**Last updated:** 2026-04-22
+**Last updated:** 2026-04-25
 **Next Claude:** read this file FIRST, then `GhostCheck_Build_Prompt.md`, then greet the user.
 
 **Workflow constraint (important):** Santosh works in Claude Code on the web from his company laptop. All `git push` operations happen **from his personal laptop** against GitHub, not from the sandbox. Do not attempt `git push` from the sandbox — it will return 403. Write files in the sandbox, give Santosh the content as copyable blocks, he mirrors them into his Claude Project and eventually pushes to GitHub from his personal laptop.
@@ -120,6 +120,8 @@ From the Multi-Agent Solutions 101 preamble on 2026-04-21:
 - **DSPy + GEPA** — prompt-evolution stack. DSPy compiles prompt programs; GEPA (Genetic-Pareto Prompt Evolution, ICLR 2026 Oral) mutates prompt text against execution traces, reads *why* failures happened, keeps winners. The technique Hermes Agent uses for self-evolution; target for GhostCheck V1.1.
 - **Sources of Truth table** — doc/code pattern: enumerate every input file with `{File | Path | When | Precedence}`. Santifer's `modes/_shared.md` is the canonical example. Useful as a general doc convention.
 - **Bundle-and-dispatch vs two-hop loading** (Claude Code skill idioms) — router either (a) reads all user-layer files once and passes declared inputs to each agent, or (b) references a shared context file that in turn references user-layer files. GhostCheck uses (a); santifer uses (b). Both are valid.
+- **Skills vs Subagents** (Claude Code primitives, distinction discovered 2026-04-25). A Skill (under `.claude/skills/`) is a reusable prompt or workflow that runs in the MAIN conversation context — shares the parent's working memory. A Subagent (under `.claude/agents/`) runs in its own isolated context window with its own system prompt, tool restrictions, and model — invoked via the Task tool with `subagent_type` parameter, returns only its summary to the parent. Both are markdown files with YAML frontmatter, but their runtime behaviour is fundamentally different. GhostCheck uses Skills for the router, parser, aggregator, and enrichment helpers (they need to share context with each other), and Subagents for the 11 agents (they must NOT share context, to preserve blind fan-out).
+- **Pattern B (subagent isolation per agent)** — locked architectural pattern where the router invokes each of the 11 agents via the Task tool with `subagent_type` matching the agent's name. Each agent runs in its own isolated context. In Claude Code V1 this uses the built-in Task tool; future runtimes (Python service, Gemini CLI, Ollama) replicate by making one separate API call per agent. Pattern A (sequential reads in shared context) was rejected because it produces dependent verdicts that look independent.
 
 Terms he may still want deeper treatment on (he hasn't asked yet, but watch for it): YAML frontmatter internals, Pydantic discriminated unions, logistic regression / weighted logistic aggregator math, temperature, MarkItDown.
 
@@ -131,11 +133,16 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 - Reviewed all Day 1 work in detail. Quality: high. No content rework needed.
 - **Symbol sweep across all my files** — replaced section signs, arrows, approximation symbols, checkmarks, box-drawing characters, and the one stray emoji with plain English. Build prompt itself untouched (Santosh's spec). 40 replacements across 8 files. Driven by Santosh's feedback that AI-styling tics add reader friction in a plain-text project. Saved as a memory rule for future work.
-- **Architectural decision locked: Pattern B (subagent isolation per agent)** for the router-to-agent dispatch. Each of the 11 agents runs in its own isolated context window. The router builds the per-agent input bundle once, then invokes each agent via Claude Code's Agent tool (V1) or via separate API calls in any future runtime (Python service, Gemini CLI, Ollama). Pattern A (sequential reads in a shared context window) was rejected because it semantically breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context, producing dependent verdicts that look independent — the worst possible outcome.
+- **Architectural decision locked: Pattern B (subagent isolation per agent)** for the router-to-agent dispatch. Each of the 11 agents runs in its own isolated context window. The router builds the per-agent input bundle once, then invokes each agent via Claude Code's Task tool with `subagent_type` parameter (V1) or via separate API calls in any future runtime (Python service, Gemini CLI, Ollama). Pattern A (sequential reads in a shared context window) was rejected because it semantically breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context, producing dependent verdicts that look independent — the worst possible outcome.
+
+- **Architectural decision locked: directory split between `.claude/skills/` (Skills) and `.claude/agents/` (Subagents).** Discovered while researching the Task tool: Claude Code distinguishes Skills (run in main conversation context) from Subagents (run in isolated context, invoked via Task tool with subagent_type). Subagent auto-discovery requires `.claude/agents/` exactly — the build prompt's `.claude/skills/agents/` path is invisible to the Task tool. So the router, parser, aggregator, and enrichment helpers stay under `.claude/skills/` (as the build prompt intends), but the eleven agents move to `.claude/agents/` as flat files (e.g. `bucket-classifier.md`, no tier prefix in filename — tier encoded in frontmatter). Build prompt section 6 stays untouched as Santosh's spec; the deviation is recorded in CLAUDE.md section 4 repo layout.
 - **Architectural decision locked: Input validation Levels 1 plus 3.** Level 1 = file-extension check at the start of an audit, rejecting unsupported types before parsing. Level 3 = LLM classification call after MarkItDown parsing, asking "is this a CV / is this a JD" with a confidence score, fail-closed if confidence is low. Level 2 (content-keyword heuristics) was rejected because Santosh's real JD is a PowerPoint deck, on which heuristic header-matching breaks. The LLM classifier handles decks and PDFs identically.
 - **Real CV and JD organised into the audit-ready paths.** `CV_StrategyAnd_AI_Lead.pdf` moved to `profile/cv.pdf` (gitignored). `Strategy&_AI Solution Architect - JD - Chief.pptx` moved to `jobs/strategy-ai-architect-chief.pptx` (jobs directory gitignored). The PowerPoint format is real-world signal that the parser must handle .pptx via MarkItDown — confirmed MarkItDown supports it.
 - **Slug naming convention adopted for filenames in `jobs/` and `applications/`** — lowercase, hyphens for word boundaries, no special characters. Avoids shell-quoting hassles, cross-platform issues, and downstream tool breakage.
 - New feedback memory: explain alternatives deeply BEFORE asking Santosh to choose, not after. Each option presented as a full paragraph showing what it does mechanically and what its consequences are in practice.
+- **Pivot decision (Path 3): build an animated architecture overview slide deck BEFORE writing SKILL.md.** Santosh's instinct that long text scripts are exhausting and a visual would land the architecture better is correct, especially for his learning and for the launch audience. Path 3 means installing the `frontend-slides` Claude Code skill from the marketplace (a session restart is required so Claude Code picks it up), then using `/frontend-slides` to generate a zero-dependency animation-rich HTML deck. Anthropic's `Claude Design` (claude.ai) is the alternative for fully polished decks but lives outside Claude Code; `frontend-slides` is the right tool for in-repo documentation. Slide outline (8 slides): the problem (silence not rejection); 11 agents at a glance; Pattern A vs Pattern B; the harness in 5 pillars; audit flow end-to-end; Zero Trust posture; V1 to V2 roadmap; fork and run. Slides become both Santosh's learning artefact and a launch deliverable, pulled forward from build prompt section 11 Day 5 launch-prep.
+
+**Day 2 file writes paused at this checkpoint.** Order on resume: (1) confirm `frontend-slides` is loaded; (2) drive the 8-slide architecture deck via `/frontend-slides`; (3) review with Santosh; (4) THEN return to the SKILL.md explain-before-write for the router. Parser, first agent (`bucket-classifier`), aggregator, and end-to-end test follow SKILL.md as originally planned.
 
 **Files authored or updated this session (push-able from this machine):**
 
@@ -243,6 +250,33 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
+### ACTIVE PRIORITY (set 2026-04-25): build the architecture slide deck BEFORE resuming Day 2 file writes
+
+Santosh decided (Path 3) to pull the launch-prep slide deck forward from build prompt section 11 Day 5 because long text scripts were making the architecture hard to absorb. Day 2 file writes (`SKILL.md`, parser, first agent, aggregator) are paused at this checkpoint until the deck is built and reviewed.
+
+**Resume order:**
+
+1. **Confirm `frontend-slides` Claude Code skill is loaded.** Santosh installs it from the Claude Code plugin marketplace before restarting the session; on restart, the skill should appear in the available-skills list. If it is loaded, drive the deck through `/frontend-slides`. If for any reason it is not loaded, fall back to hand-written HTML+CSS+SVG in the same final shape.
+
+2. **Build the 8-slide architecture overview deck.** Outline (locked):
+
+   - Slide 1: The problem — silence, not rejection. Senior CV applies, no callback.
+   - Slide 2: The 11 agents at a glance, grouped by tier (A invisible-failure, B channel/math, C standard CV).
+   - Slide 3: Pattern A vs Pattern B side-by-side. Why blind fan-out matters.
+   - Slide 4: The harness in 5 pillars (one schema, blind agents, math aggregator, markdown-first, fork-friendly).
+   - Slide 5: Audit flow end-to-end (CV + JD enter, parser, fan-out to 11 isolated agents, aggregator, audit.md).
+   - Slide 6: Zero Trust posture — three Microsoft principles, four GhostCheck rules, one mapping.
+   - Slide 7: V1 to V1.1 to V1.2 to V2 roadmap.
+   - Slide 8: Fork and run — clone, drop CV, slash command, sample audit.md output.
+
+   Output goes to `docs/architecture-overview/` (or single HTML file if `frontend-slides` produces one). Self-contained, browser-native, zero dependencies.
+
+3. **Review the deck with Santosh.** Adjust any slide as needed.
+
+4. **Then resume Day 2 file writes** in the order specified below ("Build prompt section 11 Day 2 scope").
+
+---
+
 **Day 1 is COMPLETE (10 of 10 files done — 100%).** All documentation, examples, and config files from build prompt section 11 Day 1 are in the repo.
 
 ```
@@ -282,7 +316,9 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 - **Agent frontmatter `inputs:` convention** — drawn from `{cv_text, jd_text, user_profile, user_style, external_context}`. Agents omit inputs they don't need (e.g. `ats-simulator` likely omits `user_style`). The router passes *only* declared inputs to each agent. This is Path 1 (Bundle-and-dispatch); it does NOT require a schema change to `SCHEMAS.md`.
 - **`bucket-classifier` and `hm-deep-read` use temperature 0.3**; all other agents use 0.1. Max tokens per agent: 800. These values live in each agent's YAML frontmatter.
 - **Santosh's real CV goes in `profile/cv.md`** (gitignored, never pushed). The example at `profile/cv.example.md` is a fallback only.
-- **Agent invocation pattern: Pattern B (subagent isolation)**, locked 2026-04-25. The router invokes each agent in a fresh, isolated context window so no agent sees another agent's verdict. In Claude Code V1 this uses the built-in Agent tool; future runtimes (Python service, Gemini CLI, Ollama) replicate by making one separate API call per agent. Pattern A (sequential reads in a shared context) was rejected because it breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context window, producing dependent verdicts that look independent. The semantic requirement of the SKILL.md is "invoke each agent in isolation"; the runtime supplies the implementation.
+- **Agent invocation pattern: Pattern B (subagent isolation)**, locked 2026-04-25. The router invokes each agent in a fresh, isolated context window so no agent sees another agent's verdict. In Claude Code V1 this uses the built-in Task tool with `subagent_type` parameter pointing at named subagent files in `.claude/agents/`; future runtimes (Python service, Gemini CLI, Ollama) replicate by making one separate API call per agent. Pattern A (sequential reads in a shared context) was rejected because it breaks blind fan-out: agent N+1 would see prior agents' verdicts in its context window, producing dependent verdicts that look independent. The semantic requirement of the SKILL.md is "invoke each agent in isolation"; the runtime supplies the implementation.
+
+- **Directory split: Skills under `.claude/skills/`, Subagents under `.claude/agents/`**, locked 2026-04-25. The build prompt section 6 originally placed all eleven agents under `.claude/skills/agents/`, but Claude Code's documented convention is that subagents (which is what the eleven agents are) live at `.claude/agents/` to be auto-discovered by the Task tool. Following Claude Code's convention is necessary for native blind-fan-out to work; placing agents at the build prompt's path would silently break the isolation guarantee. Concrete layout: the router (`ghostcheck/SKILL.md`), the parser (`parser/markitdown-parse.md`), the aggregator (`aggregator/aggregator.md`), and the enrichment helpers stay under `.claude/skills/` because they need to share context with each other and with the user. The eleven agents live as flat files under `.claude/agents/` (e.g. `bucket-classifier.md`, `google-test.md`) — no tier prefix in the filename, since the Task tool dispatches by subagent_type which matches the filename without `.md`. Tier (A / B / C) is encoded in each subagent's frontmatter for the aggregator's weighting logic. The build prompt itself stays untouched as Santosh's spec; the deviation is documented here and reflected in `CLAUDE.md` section 4 repo layout.
 - **Input validation: Levels 1 + 3**, locked 2026-04-25. Level 1 (file-extension check) runs at the start of an audit and rejects unsupported types (e.g., `.png`, `.zip`) before parsing. Level 3 (LLM classification call) runs after MarkItDown parses the document and asks the model to confirm whether the input is a CV / a JD with a confidence score, fail-closed if confidence is low. Level 2 (content-keyword heuristics) was rejected because it false-positives on non-standard formats — Santosh's real JD is a PowerPoint deck, where heuristic header-matching breaks. The LLM classifier handles the deck and a normal PDF JD identically.
 
 **Other deferred items:**
@@ -306,9 +342,10 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - Workflow: if in web sandbox, do not try `git push` — returns 403. On personal laptop, `git push` works.
 > - Learning notes stay in Santosh's personal Claude Project (no `docs/TEACH_NOTES/` folder in the repo).
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
-> - **Next up: Day 2** — `.claude/skills/ghostcheck/SKILL.md` (router) first, then `markitdown-parse.md`, then `A3-bucket-classifier.md`, then `aggregator.md`. End-of-Day-2 target: run a real end-to-end audit on Santosh's `cv.md` + one real ghosted JD.
+> - **ACTIVE PRIORITY: build the architecture slide deck FIRST.** Santosh decided 2026-04-25 to pull launch-prep slides forward because long text was hard to absorb. Day 2 file writes are paused until the deck is built and reviewed. See section 7 for the locked 8-slide outline. First action: confirm `frontend-slides` Claude Code skill is loaded; if so, drive `/frontend-slides`; if not loaded, hand-write HTML+CSS+SVG.
+> - **After the deck:** resume Day 2 — `.claude/skills/ghostcheck/SKILL.md` (router), then `markitdown-parse.md`, then `bucket-classifier.md` at `.claude/agents/` (Subagent path, not the build prompt's `.claude/skills/agents/`), then `aggregator.md`. End-of-Day-2 target: run a real end-to-end audit on `profile/cv.pdf` + `jobs/strategy-ai-architect-chief.pptx`.
 >
-> Teach Mode is on. Day 2 files are mostly runtime-required (not documentation), so explain-before-write matters more than ever. Ready to start with the router explanation, or do you want to revisit anything from Day 1 first?
+> Teach Mode is on. The slide deck is the active priority; Day 2 file writes resume after it. Ready to check the frontend-slides skill and start the deck, or do you want to revisit any of the locked architecture decisions first?
 
 Do NOT start writing files until he says to proceed.
 
