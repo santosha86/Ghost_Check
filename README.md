@@ -35,9 +35,14 @@ Each of the 11 agents has a narrow mandate, cites evidence from your CV / the JD
 
 **Optional — only needed if your CV or JD is in DOCX, PPTX, or HTML format:**
 
-- [MarkItDown](https://github.com/microsoft/markitdown) installed via `pip install markitdown`.
+- [MarkItDown](https://github.com/microsoft/markitdown) installed with the relevant extras package:
+  - `pip install 'markitdown[all]'` — supports every input format (recommended).
+  - `pip install 'markitdown[pptx]'` — PowerPoint only.
+  - `pip install 'markitdown[docx]'` — Word only.
+- The single-quotes around the package name are required on macOS because the default shell (`zsh`) interprets unquoted square brackets as a glob pattern and the install will fail with `zsh: no matches found`. On `bash` either form works; quoting is harmless.
+- Note that the bare `pip install markitdown` (without extras) installs the CLI but cannot actually read PPTX, DOCX, or HTML — the install command needs the extras.
 
-PDF and Markdown files work out of the box — Claude Code's native file reading handles them without any install. The MarkItDown CLI is only needed when you have a Word document, PowerPoint deck, or HTML page that needs to be converted to markdown before the agents can read it. If you have a DOCX or PPTX you can also convert it to PDF first (most operating systems have built-in export to PDF) and avoid the install entirely.
+PDF and Markdown files work out of the box — Claude Code's native file reading handles them without any install. The MarkItDown CLI with extras is only needed when you have a Word document, PowerPoint deck, or HTML page that needs to be converted to markdown before the agents can read it. If you have a DOCX or PPTX you can also convert it to PDF first (most operating systems have built-in export to PDF) and avoid the install entirely.
 
 ### 2. Get the repo
 

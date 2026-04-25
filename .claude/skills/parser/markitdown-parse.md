@@ -30,8 +30,20 @@ For these formats, shell out to the MarkItDown CLI via the Bash tool.
 1. **Check that MarkItDown is installed.** Run `which markitdown` via Bash. If the command is not found (non-zero exit code or empty stdout), halt with this message:
 
    ```
-   This document type requires MarkItDown to parse.
-   Install once with: pip install markitdown
+   This document type requires MarkItDown with format-specific extras.
+   Install once with: pip install 'markitdown[all]'
+
+   For a single format only:
+     pip install 'markitdown[pptx]'   # PowerPoint
+     pip install 'markitdown[docx]'   # Word
+     pip install 'markitdown[html]'   # HTML
+
+   Note the single-quotes around the package name. macOS's default
+   shell (zsh) treats unquoted square brackets as a glob pattern and
+   the install fails with "zsh: no matches found". On bash quoting is
+   harmless but on zsh it is required. The bare `pip install markitdown`
+   (without extras) installs the CLI but cannot read PPTX, DOCX, or HTML.
+
    Then re-run /ghostcheck audit.
 
    PDF and Markdown files work without any install — if you can convert
@@ -40,7 +52,7 @@ For these formats, shell out to the MarkItDown CLI via the Bash tool.
 
 2. **If MarkItDown is found, invoke it on the file.** Run `markitdown "<path>"` via Bash. Capture stdout as the markdown text.
 
-3. **Handle MarkItDown errors.** If MarkItDown exits with a non-zero status, halt with: `"MarkItDown failed for <path>: <stderr message>. Halt parsing."`
+3. **Handle MarkItDown errors.** If MarkItDown exits with a non-zero status, halt with the captured stderr in the message: `"MarkItDown failed for <path>: <stderr message>. Halt parsing."` Pay particular attention to the error `MissingDependencyException: ... include the optional dependency [pptx] or [all]` — this means MarkItDown is installed but without the format-specific extras. Surface the install instructions from step 1 to the user.
 
 ### Unsupported extensions
 

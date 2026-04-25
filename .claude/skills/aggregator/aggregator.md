@@ -33,14 +33,22 @@ Validate:
 
 If any check fails, halt with: `"weights.yml validation failed: <specific reason>. Halt audit."`
 
-## Step 2 — Partition verdicts into S (non-UNKNOWN) and U (UNKNOWN)
+## Step 2 — Partition verdicts into S (non-UNKNOWN), U (UNKNOWN), and N (not-yet-implemented)
 
-Walk the list of verdicts:
+Walk the list of verdicts received from the router:
 
 - If `severity == "UNKNOWN"`, add to set U.
 - Otherwise, add to set S.
 
-If S is empty (all agents returned UNKNOWN), skip ahead to the audit-report write step but use the special probability marker `null` and the report text `"Insufficient data to produce a probability — every agent returned UNKNOWN."` Do not attempt to compute a number.
+Then derive the third set, N (not-yet-implemented agents):
+
+- The eleven canonical agent names are the keys of `config/weights.yml`.
+- For each agent name in `weights.yml` that does not appear in either S or U (no verdict was returned because the subagent file does not exist yet at `.claude/agents/<name>.md`), add it to N.
+- N is meaningful in V1 starting state where only one or a few of the eleven agents have been written. As Days 3 and 4 add the remaining agents, N shrinks; once all eleven exist, N is empty for every audit.
+
+If S is empty (all agents that DID run returned UNKNOWN) AND N is also empty (every agent ran), use the special probability marker `null` and the report text `"Insufficient data to produce a probability — every agent returned UNKNOWN."` Do not attempt to compute a number.
+
+If S is empty AND N is non-empty (V1 starting-state edge case where the only agents that exist returned UNKNOWN), do the same: probability is `null`, but the not-assessed section also lists every agent in N as not-yet-implemented so the user sees the full picture of why the audit is empty.
 
 ## Step 3 — Redistribute weights across non-UNKNOWN agents
 
@@ -156,10 +164,19 @@ Follow `docs/SCHEMAS.md` section 11 contract exactly. Use the Write tool. The st
 
 ## Not assessed
 
-<For each verdict in U:>
-- **<agent_id>** — <unknown_reason>
+<If both U and N are empty, write: "None — all eleven agents produced verdicts.">
 
-<If U is empty, write: "None — all agents produced verdicts.">
+<If U is non-empty:>
+
+The following agents ran but could not produce a verdict:
+
+- **<agent_id from U>** — <unknown_reason>
+
+<If N is non-empty (V1 starting state):>
+
+The following agents are part of the V1 design but are not yet implemented in this build. They will be added on later days per the build plan, after which re-running the audit on this same CV and JD will produce a more complete and likely more accurate probability.
+
+- **`<agent_id from N>`** — not yet implemented. <One-line note about what the agent would assess if implemented.>
 
 ## Full verdicts (appendix)
 
