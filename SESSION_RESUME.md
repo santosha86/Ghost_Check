@@ -3,7 +3,13 @@
 **Last updated:** 2026-04-25
 **Next Claude:** read this file FIRST, then `GhostCheck_Build_Prompt.md`, then greet the user.
 
-**Workflow constraint (important):** Santosh works in Claude Code on the web from his company laptop. All `git push` operations happen **from his personal laptop** against GitHub, not from the sandbox. Do not attempt `git push` from the sandbox — it will return 403. Write files in the sandbox, give Santosh the content as copyable blocks, he mirrors them into his Claude Project and eventually pushes to GitHub from his personal laptop.
+**Workflow constraint (important):** Santosh splits work between **two machines**, and Claude's behaviour must adapt:
+
+- **Personal laptop** (Claude Code Desktop, macOS): `git push` works normally. File writes persist on disk. Real CV (`profile/cv.pdf`) and real JD (`jobs/strategy-ai-architect-chief.pptx`) live here, gitignored. This is where the audit pipeline actually runs.
+
+- **Office laptop** (Claude Code on the web sandbox): `git push` returns 403. File writes in the sandbox are ephemeral — they exist only for the session and do not persist back to disk on Santosh's office machine. Read access to GitHub works (read-only review of what's already pushed). For any change to land in the repo, Santosh must mirror sandbox content into his personal Claude Project and eventually push from his personal laptop.
+
+**Always confirm which environment the session is in before attempting `git push` or assuming file persistence.** Look at the current working directory and the surrounding signals: if it is `/Users/santosh_work/...` you are on the personal laptop and pushes work; if you are inside a sandboxed `/tmp/`-style path or the system reminders mention a sandbox, treat all writes as ephemeral and surface content to Santosh as copyable blocks rather than relying on the file system.
 
 ---
 
@@ -140,9 +146,19 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 - **Real CV and JD organised into the audit-ready paths.** `CV_StrategyAnd_AI_Lead.pdf` moved to `profile/cv.pdf` (gitignored). `Strategy&_AI Solution Architect - JD - Chief.pptx` moved to `jobs/strategy-ai-architect-chief.pptx` (jobs directory gitignored). The PowerPoint format is real-world signal that the parser must handle .pptx via MarkItDown — confirmed MarkItDown supports it.
 - **Slug naming convention adopted for filenames in `jobs/` and `applications/`** — lowercase, hyphens for word boundaries, no special characters. Avoids shell-quoting hassles, cross-platform issues, and downstream tool breakage.
 - New feedback memory: explain alternatives deeply BEFORE asking Santosh to choose, not after. Each option presented as a full paragraph showing what it does mechanically and what its consequences are in practice.
-- **Pivot decision (Path 3): build an animated architecture overview slide deck BEFORE writing SKILL.md.** Santosh's instinct that long text scripts are exhausting and a visual would land the architecture better is correct, especially for his learning and for the launch audience. Path 3 means installing the `frontend-slides` Claude Code skill from the marketplace (a session restart is required so Claude Code picks it up), then using `/frontend-slides` to generate a zero-dependency animation-rich HTML deck. Anthropic's `Claude Design` (claude.ai) is the alternative for fully polished decks but lives outside Claude Code; `frontend-slides` is the right tool for in-repo documentation. Slide outline (8 slides): the problem (silence not rejection); 11 agents at a glance; Pattern A vs Pattern B; the harness in 5 pillars; audit flow end-to-end; Zero Trust posture; V1 to V2 roadmap; fork and run. Slides become both Santosh's learning artefact and a launch deliverable, pulled forward from build prompt section 11 Day 5 launch-prep.
+- **Slide deck pivot deferred** — was pulled forward from Day 5 launch prep then deferred again the same day because Santosh chose to prioritise Day 2 file writes over the install/restart cycle for the `frontend-slides` Claude Code skill. Returns to Day 5 launch prep as originally scoped.
 
-**Day 2 file writes paused at this checkpoint.** Order on resume: (1) confirm `frontend-slides` is loaded; (2) drive the 8-slide architecture deck via `/frontend-slides`; (3) review with Santosh; (4) THEN return to the SKILL.md explain-before-write for the router. Parser, first agent (`bucket-classifier`), aggregator, and end-to-end test follow SKILL.md as originally planned.
+- **Day 2 file writes complete (4 of 4).** All four files written in this session on personal laptop:
+  - `.claude/skills/ghostcheck/SKILL.md` — the slash-command router. 8-step audit procedure, Files-this-audit-loads Sources of Truth table, Path-1 bundle-and-dispatch, Pattern-B subagent isolation via the Agent tool, fail-closed at every step.
+  - `.claude/skills/parser/markitdown-parse.md` — smart parser. PDF and Markdown go through Claude Code's native Read tool (zero install). DOCX, PPTX, HTML, TXT shell to MarkItDown via Bash; halts with explicit install message if MarkItDown is missing.
+  - `.claude/agents/bucket-classifier.md` — first subagent. Establishes the agent template every Day-3 and Day-4 agent will follow. `tools: []` (empty allowlist, least privilege). Embedded AgentVerdict schema in the prompt body. Severity rubric, evidence-citation rules, behavioural invariants.
+  - `.claude/skills/aggregator/aggregator.md` — deterministic combiner. Reads weights from `config/weights.yml`, redistributes weight on UNKNOWN per SCHEMAS.md section 13, computes callback probability via weighted-logistic with V1 hyperparameters `k=4.0, midpoint=0.4` (using `bc -l` for the math, no Python dependency). Writes `audit.md`, `verdicts.json`, `context.json` to `applications/YYYY-MM-DD_<slug>/`.
+
+- **Architectural decision locked: weighted-logistic formula in V1, hyperparameters tuned by V1.2 calibration.** Formula stays the same V1 to V2 — calibration only adjusts `k` and `midpoint`. Linear was considered and rejected because (a) extreme cases in linear are unrealistic (0% and 75% endpoints versus logistic's 8% and 64%), (b) build prompt and SCHEMAS.md both specify "weighted logistic," (c) Santosh's principle of formula consistency across versions matters more than V1 simplicity.
+
+- **README.md prerequisites section updated** to reflect MarkItDown's optional status: required only for DOCX, PPTX, HTML inputs; PDF and Markdown work without any install.
+
+**End-to-end test is the remaining Day 2 step.** It validates: pipeline runs end-to-end (router → parser → bucket-classifier subagent → aggregator), Santosh's real CV at `profile/cv.pdf` plus the PowerPoint JD at `jobs/strategy-ai-architect-chief.pptx` produce a meaningful audit, callback probability lands in a believable range given Santosh's known ghosted outcome on this application. Test path: install MarkItDown (one-time `pip install markitdown` on personal laptop), restart Claude Code session so the new skills are auto-discovered, run `/ghostcheck audit --cv profile/cv.pdf --jd jobs/strategy-ai-architect-chief.pptx`, inspect `applications/2026-04-25_strategy-ai-architect-chief/audit.md`.
 
 **Files authored or updated this session (push-able from this machine):**
 
@@ -250,32 +266,27 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
-### ACTIVE PRIORITY (set 2026-04-25): build the architecture slide deck BEFORE resuming Day 2 file writes
+### ACTIVE PRIORITY: End-to-end test of Day 2 build
 
-Santosh decided (Path 3) to pull the launch-prep slide deck forward from build prompt section 11 Day 5 because long text scripts were making the architecture hard to absorb. Day 2 file writes (`SKILL.md`, parser, first agent, aggregator) are paused at this checkpoint until the deck is built and reviewed.
+Day 2 file writes are complete. The remaining step is to run the audit end-to-end on Santosh's real CV plus PowerPoint JD and validate the output against his known ghosted outcome.
 
-**Resume order:**
+**Test procedure (Path A — real run with the slash command):**
 
-1. **Confirm `frontend-slides` Claude Code skill is loaded.** Santosh installs it from the Claude Code plugin marketplace before restarting the session; on restart, the skill should appear in the available-skills list. If it is loaded, drive the deck through `/frontend-slides`. If for any reason it is not loaded, fall back to hand-written HTML+CSS+SVG in the same final shape.
+1. **Install MarkItDown** (one-time): on the personal laptop, in the terminal: `pip install markitdown` (works inside the anaconda3 environment). PDF CV does not need it but the PowerPoint JD does.
+2. **Restart Claude Code** so the new skills under `.claude/skills/` and the new subagent under `.claude/agents/` are auto-discovered.
+3. **In the restarted session**, paste the resume prompt (Section "Quick start" at the top of this file). The next Claude lands here in section 7 with this priority active.
+4. **Run the slash command**: `/ghostcheck audit --cv profile/cv.pdf --jd jobs/strategy-ai-architect-chief.pptx`
+5. **Inspect the output** at `applications/2026-04-25_strategy-ai-architect-chief/audit.md`. Validate the callback probability lands in a believable range — Santosh was ghosted on this real application, so a realistic V1 audit (with only `bucket-classifier` agent live, the other 10 not yet built) should produce a low probability based on bucket-classifier's verdict alone.
 
-2. **Build the 8-slide architecture overview deck.** Outline (locked):
+**What to watch for in the test output:**
 
-   - Slide 1: The problem — silence, not rejection. Senior CV applies, no callback.
-   - Slide 2: The 11 agents at a glance, grouped by tier (A invisible-failure, B channel/math, C standard CV).
-   - Slide 3: Pattern A vs Pattern B side-by-side. Why blind fan-out matters.
-   - Slide 4: The harness in 5 pillars (one schema, blind agents, math aggregator, markdown-first, fork-friendly).
-   - Slide 5: Audit flow end-to-end (CV + JD enter, parser, fan-out to 11 isolated agents, aggregator, audit.md).
-   - Slide 6: Zero Trust posture — three Microsoft principles, four GhostCheck rules, one mapping.
-   - Slide 7: V1 to V1.1 to V1.2 to V2 roadmap.
-   - Slide 8: Fork and run — clone, drop CV, slash command, sample audit.md output.
+- `bucket-classifier` returns a sensible verdict (not all-LOW given the IT-services background and senior target).
+- Schema validation passes — verdict has all required fields.
+- The aggregator's weight redistribution gives `bucket-classifier` 100% of effective weight (since the other 10 agents are absent and treated as not-yet-implemented).
+- Callback probability is computed via the documented logistic formula.
+- The audit folder contains all three files: `audit.md`, `verdicts.json`, `context.json`.
 
-   Output goes to `docs/architecture-overview/` (or single HTML file if `frontend-slides` produces one). Self-contained, browser-native, zero dependencies.
-
-3. **Review the deck with Santosh.** Adjust any slide as needed.
-
-4. **Then resume Day 2 file writes** in the order specified below ("Build prompt section 11 Day 2 scope").
-
----
+**If the test surfaces a problem**, that is a real Day 2 finding — the system telling us where the V1 design needs tuning. We learn from the run.
 
 **Day 1 is COMPLETE (10 of 10 files done — 100%).** All documentation, examples, and config files from build prompt section 11 Day 1 are in the repo.
 
@@ -324,6 +335,7 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 **Other deferred items:**
 
 - **After Day 2 is stable**: create empty structural folders (`applications/`, `patterns/`, `wiki/`) with `.gitkeep` + `README.md` placeholders. Referenced in `CLAUDE.md section 4` but not yet present on disk.
+- **Architecture slide deck (Path 3, deferred)**: pulled forward 2026-04-25 then deferred again the same day because Santosh chose to prioritise Day 2 file writes over the `frontend-slides` install/restart cycle. Returns to Day 5 launch prep as originally scoped. Locked 8-slide outline still applies when the deck is built. See the 2026-04-25 entry in section 6 for the outline.
 - **Day 5 `ROADMAP.md` content is pre-captured** — see "For Day 5" block in section 6 above. Contains the full Hermes/GEPA V1.1 entry and the Microsoft Observability V1.2/V2 reference.
 
 **Open taste / scope questions Santosh has not yet decided** (low urgency, flag at Day 2 kickoff):
@@ -342,10 +354,11 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - Workflow: if in web sandbox, do not try `git push` — returns 403. On personal laptop, `git push` works.
 > - Learning notes stay in Santosh's personal Claude Project (no `docs/TEACH_NOTES/` folder in the repo).
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
-> - **ACTIVE PRIORITY: build the architecture slide deck FIRST.** Santosh decided 2026-04-25 to pull launch-prep slides forward because long text was hard to absorb. Day 2 file writes are paused until the deck is built and reviewed. See section 7 for the locked 8-slide outline. First action: confirm `frontend-slides` Claude Code skill is loaded; if so, drive `/frontend-slides`; if not loaded, hand-write HTML+CSS+SVG.
-> - **After the deck:** resume Day 2 — `.claude/skills/ghostcheck/SKILL.md` (router), then `markitdown-parse.md`, then `bucket-classifier.md` at `.claude/agents/` (Subagent path, not the build prompt's `.claude/skills/agents/`), then `aggregator.md`. End-of-Day-2 target: run a real end-to-end audit on `profile/cv.pdf` + `jobs/strategy-ai-architect-chief.pptx`.
+> - **Day 2 file writes complete (4 of 4):** `.claude/skills/ghostcheck/SKILL.md`, `.claude/skills/parser/markitdown-parse.md`, `.claude/agents/bucket-classifier.md`, `.claude/skills/aggregator/aggregator.md`. Confirm they are on GitHub.
+> - **ACTIVE: End-to-end test** on `profile/cv.pdf` plus `jobs/strategy-ai-architect-chief.pptx`. Procedure in section 7. Requires MarkItDown installed (`pip install markitdown`) and a Claude Code session restart so the new skills are auto-discovered.
+> - The architecture slide deck (Path 3) was pulled forward then deferred — back to Day 5 launch prep. Locked 8-slide outline still in section 6 when we get to it.
 >
-> Teach Mode is on. The slide deck is the active priority; Day 2 file writes resume after it. Ready to check the frontend-slides skill and start the deck, or do you want to revisit any of the locked architecture decisions first?
+> Teach Mode is on. The end-to-end test is what validates Day 2. After the test passes, Day 3 begins — Tier A agents (google-test, posting-decoder, it-services-discount, headline-filter), each following the bucket-classifier template established in Day 2.
 
 Do NOT start writing files until he says to proceed.
 
