@@ -1,25 +1,22 @@
 # GhostCheck
 
-**Audit why senior applications get silence — not rejection.**
+> **A Claude Code skill pack that audits why senior job applications get silence instead of rejection.**
 
-Senior candidates apply to the right roles, tailor the CV, hit Submit, and then... nothing. Not a rejection. Silence. Existing CV checkers score keywords and ATS compatibility, but the real reasons for silence are usually invisible to them — wrong channel, no external proof (the Google test), bucket mismatch (your CV reads one seniority level below the target), stale postings, IT-services discount, theater postings.
+Existing CV checkers score keywords and ATS compatibility. The real silence drivers at senior levels are invisible to them — bucket mismatch (CV reads one tier below target), IT-services discount, channel mismatch (Easy Apply vs referral), theater postings, missing online surface, stale postings.
 
-GhostCheck simulates the entire screening funnel using 11 narrow, specialised agents. Each agent inspects one dimension of silence risk and produces a verdict in a fixed, evidence-cited shape. A deterministic aggregator combines those verdicts into a callback probability with ranked silence drivers and specific fix suggestions.
+GhostCheck simulates the entire screening funnel using **11 narrow, specialised agents** running in **blind fan-out** — every agent judges one dimension of silence risk in its own isolated context window. A deterministic weighted-logistic aggregator (no second LLM call) combines the verdicts into a callback probability with ranked silence drivers and evidence-cited fix hints.
 
----
+## What's interesting
 
-## What makes GhostCheck different
+- **Pattern B subagent isolation** — true blind fan-out per Claude Code's documented subagent runtime
+- **Strict `AgentVerdict` schemas** with fail-closed coercion at every boundary
+- **Deterministic aggregator** — refuses to interpret, only does math
+- **Evidence citation requirement** on every verdict — no opinion without grounding
+- **The harness is the moat** — ports cleanly across runtimes (Claude Code today, Python service or Gemini/Ollama wrapper tomorrow, same files)
 
-Every CV checker you've tried scores the **artifact**. GhostCheck audits the **funnel**, including the invisible failure modes no existing tool catches:
+## Why this architecture
 
-- **The Google test** — what a recruiter sees about you *before* they open your CV.
-- **Bucket mismatch** — CVs that read one seniority level below the target role.
-- **IT-services discount** — the silent downgrade triggered by tenure at large services firms.
-- **Theater postings** — JDs that are already pre-filled and exist only for compliance.
-- **Channel mismatch** — applying through Easy Apply for roles that only move via referral or DM.
-- **Stale JDs** — roles that have been open so long the shortlist is already locked.
-
-Each of the 11 agents has a narrow mandate, cites evidence from your CV / the JD / external context for every claim, and refuses to produce a verdict it can't back up (fail-closed).
+The thesis: any individual agent prompt is replicable; what's hard to replicate is the harness — shared schema contracts, fail-closed coercion, capability declarations in frontmatter, the deterministic combiner. See [`docs/HARNESS_ENGINEERING.md`](./docs/HARNESS_ENGINEERING.md) for the full reasoning.
 
 ---
 
