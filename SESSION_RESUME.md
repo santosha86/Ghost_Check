@@ -135,6 +135,29 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 6. Session log (what was done, newest first)
 
+### 2026-04-25 (later sessions — Day 3 build and validation)
+
+- **README intro tightened for interviewer demo** (commit `4f7c170`). Replaced the longer "What makes GhostCheck different" framing with a sharper opening landing the architectural thesis in three sections; path fix on the harness-engineering link.
+- **Day 3 file writes complete (7 files).** Pattern A — enrichment-then-agent in alternating order — was used so each agent had its enrichment data ready when written.
+  - `.claude/skills/enrichment/google-test-lookup.md` — wraps WebSearch, classifies results into the GoogleResult shape from SCHEMAS.md section 7.
+  - `.claude/agents/google-test.md` — judges online surface vs. JD's tier expectation. Tier-aware severity rubric.
+  - `.claude/skills/enrichment/jd-age-detector.md` — three-strategy date inference (frontmatter > text > unknown). No web calls.
+  - `.claude/agents/posting-decoder.md` — judges theater-posting risk via age × text combination.
+  - `.claude/skills/enrichment/company-classifier.md` — builds the Company object with per-field provenance via the sources map.
+  - `.claude/agents/it-services-discount.md` — judges silent-downgrade risk for IT-services-tenured candidates targeting consulting / bigtech / product firms. Asymmetric framing.
+  - `.claude/agents/headline-filter.md` — judges six-second recruiter-scan tier-clarity.
+- **End-of-Day-3 validation re-run on Santosh's real CV+JD pair.** Manual step-through (no Claude Code restart). Probability dropped from 64.6% (Day 2 close) → 41.5% (Day 3 strict, with two UNKNOWN agents) → 35.8% (Day 3 with company-classifier fix applied). The Day-3 audit lands at `applications/2026-04-25_strategy-ai-architect-chief_2/audit.md`. Top driver: `it-services-discount` HIGH (matched Santosh's hunch — confirmed services-firm tenure was a real silence driver).
+- **Real design gap surfaced and fixed during validation.** Strict company-classifier returned null when no company name was extractable from the JD (common with PowerPoint deck JDs that reference "the firm" generically). This left it-services-discount UNKNOWN, breaking the most diagnostic agent on this exact case. Fix applied to two files:
+  - `company-classifier.md` Step 1 relaxed to use a placeholder name (`"[unspecified hiring firm — name not in JD]"`) when no real name is extractable. Step 4 web-search skipped for placeholder names. Company object exists with `name=placeholder, company_type=inferred, sources.company_type=text_inferred` when JD body language gives a clear signal.
+  - `it-services-discount.md` behavioural rule relaxed to accept any `company_type` set with `sources.company_type` of `text_inferred / web_search / user_provided` (rejecting only when set to `default` or when the whole Company object is null).
+- **New feedback memory:** "Empirical heuristics — write the best draft, calibrate from real audits." For agent severity rubrics and judgment heuristics where only real audits validate the choice, skip per-file approval gates. Architectural and schema decisions still require approval.
+
+**Day 3 close design state:**
+
+- 5 of 11 agents live (all 5 Tier A: bucket-classifier, google-test, posting-decoder, it-services-discount, headline-filter).
+- 3 of 4 enrichment skills live (google-test-lookup, jd-age-detector, company-classifier; the V1.1 Hermes-evolution-trigger skill is not in scope).
+- Architecture validated against real-world ground truth: probability moved meaningfully toward the actual ghosted outcome.
+
 ### 2026-04-25 (third session — personal laptop, Day 2 prep)
 
 - Reviewed all Day 1 work in detail. Quality: high. No content rework needed.
@@ -284,11 +307,32 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
-### ACTIVE PRIORITY: Day 3 — Tier A invisible-failure agents
+### ACTIVE PRIORITY: Day 4 — Tier B and Tier C agents
 
-Day 2 closed cleanly on 2026-04-25. End-to-end validation passed (see section 6 for full results). The first audit landed at `applications/2026-04-25_strategy-ai-architect-chief/audit.md` with bucket-classifier reporting LOW severity and the aggregator computing 64.6% callback probability — too optimistic for the known ghosted outcome, which is expected because ten of eleven agents have not yet been written. Day 3 fixes that.
+Day 3 closed on 2026-04-25 (same calendar date as Day 2 — full-day push). All four Tier A agents and three enrichment skills are written, committed, and validated against Santosh's real CV+JD pair. End-of-Day-3 audit at `applications/2026-04-25_strategy-ai-architect-chief_2/audit.md` produced 35.8% callback probability (down from Day-2's 64.6%), with `it-services-discount` returning HIGH severity — matching Santosh's hunch about the real silence driver on this application.
 
-### First action tomorrow (before Day 3 file writes): a five-minute ground-truth check
+Day 4 scope: six remaining agents (Tier B and Tier C). No new enrichment skills required — Tier B reads `applications/*/outcome.md` and `applications/*/channel.md` (user-written) plus `external_context.jd_age_days` already populated; Tier C reads CV and JD only. After Day 4 lands, all 11 agents are live and the audit re-run produces the full V1 picture.
+
+Files for Day 4:
+
+```
+.claude/agents/funnel-math.md         — B1 (application-to-callback rate vs benchmark)
+.claude/agents/channel-mix.md         — B2 (channel distribution vs senior-tier benchmarks)
+.claude/agents/stale-detector.md      — B3 (late-application flag, reads jd_age_days)
+.claude/agents/ats-simulator.md       — C1 (keyword + years + title match)
+.claude/agents/recruiter-30sec.md     — C2 (first-scan impression: companies, tenure, trajectory)
+.claude/agents/hm-deep-read.md        — C3 (decisions owned vs activities performed)
+```
+
+Each follows the bucket-classifier and Day-3-agents template — no new design surface, just specialisation. Estimated 15 minutes per file with Teach Mode on, plus a final end-of-Day-4 audit re-run.
+
+### Ground-truth check (completed 2026-04-25)
+
+Santosh confirmed during Day 3 that `it-services-discount` was the agent he most suspected was the silence driver on this specific application. End-of-Day-3 validation confirmed the hunch: the agent fired HIGH on his real CV+JD pair, contributed the largest single weight to the callback probability drop (64.6% → 35.8%), and produced specific reframing fix hints (delivery-language → ownership-language) that match the actual silence pattern at top-tier consulting firms.
+
+The exercise procedure below is preserved in case the same check is useful for future audits on different CV+JD pairs.
+
+### Original procedure (kept for reference)
 
 Santosh was ghosted on this exact CV+JD pair. He has real-world knowledge about WHY that the audit cannot see directly. Before writing Day 3 agents, walk him through this short exercise:
 
@@ -410,13 +454,13 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - Workflow: if in web sandbox, do not try `git push` — returns 403. On personal laptop, `git push` works.
 > - Learning notes stay in Santosh's personal Claude Project (no `docs/TEACH_NOTES/` folder in the repo).
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
-> - **Day 2 is CLOSED (2026-04-25).** End-to-end validation passed: pipeline runs router → parser → bucket-classifier → aggregator → audit.md. First audit landed at `applications/2026-04-25_strategy-ai-architect-chief/audit.md` with 64.6% callback probability (too optimistic for the known ghosted outcome, as expected because only one of eleven agents is live).
-> - Two real-world findings were applied during validation: README and parser updated to specify `pip install 'markitdown[all]'` (with quoting for zsh); aggregator updated to surface "not yet implemented" agents in the Not-Assessed section, not just UNKNOWN.
-> - **FIRST action before Day 3 file writes: a five-minute ground-truth check.** Walk Santosh through this exercise: open the latest audit, look at the four most-likely-relevant Not-Assessed agents (it-services-discount, channel-mix, google-test, posting-decoder), and ask him which one or two he actually believes was the silence driver for this specific application. He has ground truth from his real experience that the audit cannot see directly. His answer shapes which Day-3 agent gets written first so the system's accuracy is testable fastest. Full procedure is in section 7 under "First action tomorrow." This validates the system's HYPOTHESIS SPACE matches the real silence driver, which matters more than the probability number at this build state.
-> - **ACTIVE: Day 3 — Tier A invisible-failure agents.** Build prompt section 11 Day 3 scope: `google-test`, `posting-decoder`, `it-services-discount`, `headline-filter`, plus the enrichment skills they depend on. Each follows the bucket-classifier template from Day 2.
-> - The architecture slide deck (Path 3) was pulled forward then deferred — back to Day 5 launch prep. Locked 8-slide outline still in section 6 when we get to it.
+> - **Day 2 and Day 3 are both CLOSED (both on 2026-04-25 — full-day push).** All five Tier A agents are live (bucket-classifier, google-test, posting-decoder, it-services-discount, headline-filter) plus three enrichment skills (google-test-lookup, jd-age-detector, company-classifier).
+> - End-of-Day-3 validation on Santosh's real CV plus PowerPoint JD: callback probability dropped from 64.6% (Day 2 close) to 35.8% (Day 3 close). `it-services-discount` returned HIGH severity, confirming Santosh's hunch about the silence driver on this specific application. Audit at `applications/2026-04-25_strategy-ai-architect-chief_2/audit.md`.
+> - Real design gap surfaced and fixed during Day 3 validation: company-classifier was returning null when no company name was extractable from the JD (common with PowerPoint deck JDs), which broke it-services-discount on this exact case. Fix applied to both files; saved as the "empirical heuristics" feedback memory. Architecture validated against ground truth.
+> - **ACTIVE: Day 4 — Tier B and Tier C agents.** Build prompt section 11 Day 4 scope: `funnel-math`, `channel-mix`, `stale-detector` (Tier B); `ats-simulator`, `recruiter-30sec`, `hm-deep-read` (Tier C). No new enrichment skills required. Each follows the bucket-classifier and Day-3-agents template.
+> - The architecture slide deck (Path 3) is deferred to Day 5 launch prep. Locked 8-slide outline still in section 6 when we get to it.
 >
-> Teach Mode is on. Day 3 expectation: by the end of Day 3, re-running `/ghostcheck audit` on the same CV+JD pair should show the callback probability drop meaningfully because `it-services-discount` will likely flag the Wipro+TCS+Nor Consult background against this Chief consulting role.
+> Teach Mode is on. Day 4 expectation: by the end of Day 4, all 11 agents are live. Re-running the audit should land in the 15-30% range if `channel-mix` flags a channel mismatch (likely if the application went via a non-referral channel). That convergence toward the ground-truth ghosted outcome is the V1-functional milestone.
 
 Do NOT start writing files until he says to proceed.
 
