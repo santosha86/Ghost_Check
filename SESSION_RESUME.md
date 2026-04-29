@@ -307,26 +307,37 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
-### ACTIVE PRIORITY: Day 5 — documentation, V1.1 placeholders, launch prep
+### ACTIVE PRIORITY: End-to-end testing then Day 6 cleanup pass
 
-Day 4 closed on 2026-04-29. All eleven agents are written and validated. End-of-Day-4 audit on Santosh's real CV+JD pair landed at 40.1% callback probability — slightly higher than Day-3's 35.8% because the new Tier C agents (ats-simulator LOW, recruiter-30sec MEDIUM, hm-deep-read MEDIUM) found genuine positive signals that diluted the high-severity contribution from Tier A in the weighted average. Four agents (posting-decoder, funnel-math, channel-mix, stale-detector) returned UNKNOWN due to data-limited inputs (no application-history log, no JD posting date) — these are exactly the dimensions that need user-logged data over time to fire. The audit at `applications/2026-04-29_strategy-ai-architect-chief/audit.md` is appropriately humble about what V1 with no logged application history can and cannot measure.
+Day 5 closed 2026-04-29. All documentation, V1.1 / V1.2 placeholders, folder READMEs, and the ROADMAP have shipped. V1 is launch-ready by file-count and content; the architectural cleanup pass (per section 9 technical-debt list) happens after end-to-end testing on Day 5/6.
 
-**The full pipeline is functional and on GitHub.** V1's runtime — router, parser, eleven subagents in isolated contexts, deterministic aggregator — runs end-to-end on real data and produces honest, schema-faithful audit artefacts.
+Files added in Day 5 (committed in the Day-5-close commit):
 
-Day 5 scope (per build prompt section 11):
+- `docs/ROADMAP.md` — V1 to V2 plan with V1.1 (Hermes/GEPA self-evolution, batch pattern analysis, sharable artefacts), V1.2 (calibration, BYOK, Karpathy LLM Wiki, runtime Zero Trust), and V2 (Python service, web frontend, Microsoft AI Observability framework). Honest calibration disclaimers included.
+- `.claude/agents/V1_1-pattern-detector.md` — placeholder for the V1.1 batch pattern agent that produces the personal silence signature.
+- `.claude/skills/wiki-compiler/wiki-compile.md` — placeholder for the V1.2 Karpathy LLM Wiki implementation.
+- `applications/README.md` — folder convention plus `outcome.md` and `channel.md` logging format.
+- `patterns/README.md`, `wiki/README.md` — placeholder READMEs for V1.1 and V1.2 output.
+- `.gitkeep` files in all three structural folders so they exist for forkers.
+- `README.md` — Roadmap section updated to point at `docs/ROADMAP.md` with sharper one-liners per version.
 
-```
-docs/ROADMAP.md                                — V1 to V1.1 to V1.2 to V2 plan
-.claude/skills/agents/V1_1-pattern-detector.md  — placeholder skill file showing the V1.1 batch pattern agent
-.claude/skills/wiki-compiler/wiki-compile.md    — V1.2 placeholder for Karpathy LLM Wiki pattern
-patterns/README.md, wiki/README.md              — empty-folder placeholders explaining the V1.1 / V1.2 use
-applications/README.md                          — explains the YYYY-MM-DD_<slug> folder convention plus how to log outcomes and channels
-Final README polish                             — bring the README in line with end-of-V1 reality (all 11 agents live, point at the audit artefact)
-```
+**Next step: end-to-end testing.** Execute the validation plan that Santosh requested before Day 6 cleanup begins. The intent is to surface issues that we have not seen yet so the cleanup pass addresses them in the same focused session as the section-9-A architectural debt.
 
-End of Day 5: V1 launch-ready. Repo links to GitHub. Architecture documents are coherent. Forkers can clone and run.
+End-to-end testing scope:
 
-V1.1 Hermes/GEPA self-evolution and V1.2 calibration loop are documented in the new ROADMAP but not implemented. Per the build prompt those are post-V1 work.
+1. **Re-validate the Day-4 audit** on Santosh's real CV plus PowerPoint JD. Confirm the previous 40.1% probability still produces. Sanity check that no Day-5 file additions broke runtime behaviour (they should not — Day 5 added documentation only, no runtime logic).
+2. **Cross-domain audit** on at least one non-AI / non-Santosh CV+JD pair. Recommended: write a scrubbed-persona electrical engineer or finance director CV with a matching JD; run `/ghostcheck audit` end-to-end; observe what the agents do with prompts that were written from AI-domain data. This is the test that validates the harness-portability thesis. Findings populate section 9-C of this file.
+3. **Edge-case parser test** — run on a markdown CV (not PDF, not PPTX) and a plain-text JD. Confirm Read-tool path works for both. Should be smoke-test-only.
+4. **Audit-folder log test** — write three example `applications/<slug>/outcome.md` and `channel.md` files for a fictional history; run `/ghostcheck audit` again; confirm `funnel-math` and `channel-mix` activate (move from UNKNOWN to a real verdict). This validates the section 9-B3 router pre-aggregation expectation.
+
+After end-to-end testing surfaces issues:
+
+- Populate section 9-C of this file with each issue, severity, and proposed fix.
+- Begin the Day-6 cleanup pass executing section 9-D's plan: A1 first (structured-extraction architecture, 3-4 hours), A2 falls out of A1 mostly, A3 (cross-domain validation), B-items in priority order, C-items as the final sweep.
+
+Estimated total Day-6 cleanup: 6-8 hours focused work. Could be one long session or split across two.
+
+After cleanup, V1 is genuinely launch-ready (clean architecture, documented debt resolved, cross-domain-validated). V1.1 work begins per `docs/ROADMAP.md`.
 
 ### Ground-truth check (completed 2026-04-25)
 
@@ -456,11 +467,11 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - Workflow: if in web sandbox, do not try `git push` — returns 403. On personal laptop, `git push` works.
 > - Learning notes stay in Santosh's personal Claude Project (no `docs/TEACH_NOTES/` folder in the repo).
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
-> - **Days 2, 3, and 4 are all CLOSED.** All eleven agents are written, all four enrichment skills are written, the runtime pipeline runs end-to-end. Day 4 close audit at `applications/2026-04-29_strategy-ai-architect-chief/audit.md` produced 40.1% callback probability with seven of eleven agents active (four UNKNOWN due to data-limited inputs — applications log empty, JD has no posting date). The system is honest about what it can and cannot measure.
-> - **ACTIVE: Day 5 — documentation, V1.1 placeholders, launch prep.** Build prompt section 11 Day 5 scope: `docs/ROADMAP.md`, V1.1 placeholder skill files for `pattern-detector` and `wiki-compile`, `patterns/README.md` and `wiki/README.md` and `applications/README.md` placeholders, final README polish. Roughly 6-8 small files; about 45-60 minutes with Teach Mode.
-> - Architecture slide deck (Path 3) was deferred from Day 3 prep — the 8-slide outline is captured in section 6 (2026-04-22) and could be revisited during or after Day 5 if Santosh has time to install `frontend-slides` skill.
+> - **Days 2, 3, 4, and 5 are all CLOSED.** All eleven agents written, all four enrichment skills, all documentation, V1.1 / V1.2 placeholders, folder READMEs, ROADMAP. V1 is launch-ready by file count.
+> - **Pending architectural cleanup.** Section 9 of this file catalogues V1 technical debt for a single focused cleanup pass after end-to-end testing. The structured-extraction architecture (A1) is the largest item — replaces hardcoded text in agent prompts with named-field references. Plus cross-domain validation (A3), config-driven firm lists (A2), router pre-aggregation of applications_log (B3), and several smaller items. Estimated 6-8 hours of focused work.
+> - **ACTIVE: end-to-end testing.** Run the validation plan from section 7 of this file: re-confirm the Day-4 audit, run a cross-domain audit (electrical engineer or finance director), parser edge-case test, applications-log activation test. Capture findings in section 9-C. Then execute section 9-D cleanup plan in order.
 >
-> Teach Mode is on. Day 5 is documentation and polish — different rhythm from Days 2-4. The end goal is V1 launch-ready: forkers can clone the repo, follow the README, and run their first audit on their own CV.
+> Teach Mode is on. The build prompt's five-day scope is functionally complete. What remains is the disciplined cleanup pass — exactly the kind of work that distinguishes a demo-quality build from a production-quality build.
 
 Do NOT start writing files until he says to proceed.
 

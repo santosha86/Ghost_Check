@@ -204,12 +204,12 @@ The full security posture lives in `docs/ZERO_TRUST.md`.
 
 ## Roadmap
 
-- **V1 (now)** — single-application audit: 11 agents, deterministic aggregator, markdown report.
-- **V1.1** — batch pattern analysis (the killer feature): feed five or more applications with outcomes and GhostCheck finds your **personal silence signature** — the pattern across your ghosting, not per-application.
-- **V1.2** — calibration loop with real outcomes, bring-your-own-LLM provider abstraction.
-- **V2** — optional Python/FastAPI runtime for teams and coaches.
+- **V1 (now)** — single-application audit. Eleven agents, four enrichment skills, deterministic weighted-logistic aggregator, markdown audit artefact. Functional and shipped.
+- **V1.1** — batch pattern analysis (the killer feature: your personal silence signature across multiple ghosted applications) plus DSPy+GEPA self-evolution of agent prompts using `applications/` as execution traces. Sharable PNG cards and architecture slide deck land here.
+- **V1.2** — calibration loop with real callback outcomes (tunes weights and aggregator hyperparameters from data, not intuition); bring-your-own-LLM provider abstraction (Gemini, Ollama, etc.); the Karpathy LLM Wiki pattern for compounding cross-session knowledge; runtime Zero Trust policy enforcement.
+- **V2** — Python / FastAPI runtime, web frontend, Microsoft AI Observability framework alignment, hosted multi-user runtime for career coaches and teams.
 
-Full detail in `docs/ROADMAP.md`.
+Full detail (Hermes/GEPA references, calibration mechanism, V2 architecture, contribution guidelines) in [docs/ROADMAP.md](./docs/ROADMAP.md).
 
 ---
 
