@@ -466,7 +466,127 @@ Do NOT start writing files until he says to proceed.
 
 ---
 
-## 9. How to update this file each session (pattern to preserve)
+## 9. Technical debt — fix in one focused pass after Day 5 + end-to-end testing
+
+This section is the consolidated list of architectural and content debt accumulated during Days 2-4 that we deliberately did not fix mid-build, plus the issues we expect end-to-end testing on Day 5/6 to surface. Decision logged 2026-04-29: V1 ships with the debt for the interviewer demo (current state works for Santosh's profile and Santosh's CV+JD pair); fixes happen in one focused session after Day 5 documentation lands and end-to-end testing surfaces additional issues.
+
+### A. Architectural debt (the big one)
+
+**A1. No structured-extraction layer between parser and agents.**
+
+Every agent currently re-parses raw `cv_text` and `jd_text` as markdown strings. The right architecture parses CV and JD ONCE into a structured YAML object with named fields (a `CandidateProfile` and a `JobProfile`), and every agent reads named fields rather than re-interpreting raw text. Concrete shape proposed in chat 2026-04-29:
+
+```yaml
+candidate:
+  name, current_title, current_company, total_years, location
+  recent_roles: [{title, company, start_date, end_date, client, bullets}]
+  earlier_roles: [...]
+  summary, competencies, technologies, education
+
+target_role:
+  title, company_name, seniority_keyword
+  years_required
+  required_skills, preferred_skills, responsibilities
+  market_leadership_required, external_thought_leadership_required
+```
+
+Files affected: `docs/SCHEMAS.md` (add the two schemas), `.claude/skills/parser/markitdown-parse.md` (extend to do structured extraction), `.claude/skills/ghostcheck/SKILL.md` (router passes structured profiles instead of raw text), all 11 agent files (frontmatter `inputs:` references named fields; body references named fields; hardcoded examples disappear because there is nothing to hardcode).
+
+Estimated work: 3-4 hours. Becomes the single largest item in the V1.1 cleanup pass.
+
+**A2. Hardcoded Santosh-specific and AI-specific content in agent prompts.**
+
+Three layers of violations identified during Day 4 review:
+
+- **Identity-level violations** (in the agent's "## My job" or description):
+  - `funnel-math.md` My-job paragraph 2 says "senior AI architect / principal / director-level candidate" — should reference `user_profile.target_seniority` dynamically.
+  - `bucket-classifier.md` My-job paragraph 2 uses "Staff Engineer level when the JD targets Director" as a concrete example — should be tier-abstract.
+
+- **Heuristic-level violations** (in "What I look for" sections):
+  - `google-test.md` assumes GitHub is a relevant surface — true for software/AI, less true for electrical engineering academia (which uses IEEE / ResearchGate) or finance (which uses none of those). Should be parameterised by domain or moved to `config/online_surfaces_by_domain.yml`.
+  - `it-services-discount.md` has the verbatim IT-services firm list (Wipro, TCS, Infosys, ...) baked into the prompt body — should live in `config/known_firms.yml` and be referenced by path.
+  - `company-classifier.md` has verbatim consulting / services / bigtech firm lists baked in (Heuristics A/B/C) — same fix, move to `config/known_firms.yml`.
+
+- **Example-level violations** (fix-hint examples reference Santosh's actual CV):
+  - `google-test.md` fix-hint example mentions "the SABIC RAFT-vs-RAG decision".
+  - `it-services-discount.md` fix-hint examples quote TCS bullets, mention SABIC clients.
+  - `headline-filter.md` fix-hint examples rewrite Santosh's actual "AI Architect & Manager" headline.
+  - `channel-mix.md` fix-hint example mentions "PGP at NIT Warangal" (Santosh's actual education).
+  - `ats-simulator.md` fix-hint examples reference LangGraph, MLOps, RAFT (AI keywords).
+  - `recruiter-30sec.md` fix-hint examples mention "Nor Consult Telematics" and "Saudi Electricity Company (SEC)".
+  - `hm-deep-read.md` fix-hint examples are LITERALLY Santosh's CV bullets verbatim.
+
+Right fix per layer:
+- Identity-level: replace hardcoded tier names with references to `user_profile.target_seniority` / `target_titles`.
+- Heuristic-level: move firm lists and domain assumptions to `config/*.yml` files. Agents read from config, forkers edit YAML not prompts.
+- Example-level: replace Santosh-specific examples with explicit references to `cv.example.md`'s "Rohan Mehta" canonical persona, with an inline note "(illustrative — uses cv.example.md persona; the agent fills in your actual CV's content at runtime)".
+
+Estimated work: subsumed by A1 above (structured-extraction architecture removes most of the example-level violations naturally).
+
+**A3. Cross-domain validation gap.**
+
+Day 3 and Day 4 validation passed on Santosh's CV+JD pair. That validation was partly coincidence: the heuristics were written FROM Santosh's data, so they naturally fit Santosh's data. A real cross-domain test would run the system on at least three different CV+JD pairs from genuinely different domains (e.g., a senior electrical engineer applying to a hardware-architect role; a senior product manager applying to a CPO role; a senior finance director applying to a CFO role) and confirm the verdicts are sensible.
+
+Until that test happens, the system's "domain-agnostic" claim is theoretical, not validated. After A1 lands, the test is much more meaningful because the architecture itself is genuinely domain-agnostic.
+
+Plan: alongside A1's structured-extraction work, write three scrubbed-persona example CVs and JDs from different domains, run audits on all three, confirm sensible verdicts, fix any agents whose heuristics break.
+
+### B. Smaller debt items catalogued
+
+**B1. Aggregator hyperparameters are V1 defaults, not calibrated.** `k = 4.0`, `midpoint = 0.4` in `aggregator.md`. V1.2 calibration loop will tune from real outcome data once enough audits accumulate. Document this status more prominently in `aggregator.md` and `audit.md` footers.
+
+**B2. `weights.yml` per-agent weights are V1 defaults.** Same status as B1. The 0.14 / 0.12 / 0.10 / etc. weights were chosen by intuition; calibration will adjust.
+
+**B3. Router does not pre-aggregate `applications_log` for funnel-math and channel-mix.** SKILL.md needs a step that walks `applications/*/outcome.md` and `applications/*/channel.md`, builds the `applications_log` array, and passes it. Currently those agents return UNKNOWN because the input is empty. Document the file convention in `applications/README.md` (Day 5 work).
+
+**B4. Company-classifier name-extraction is brittle.** Day 3 fix relaxed the strict no-name-then-null rule, but the underlying name extraction (frontmatter or first heading) misses many real cases. V1.1 could use web search on JD content + role title to identify the hiring firm even when not named verbatim.
+
+**B5. JD-frontmatter convention is documented but not encouraged.** README.md mentions optional YAML frontmatter for JDs (with `posted_date`, `source_url`, etc.), but the demo run on Santosh's PowerPoint JD showed how easy it is to skip. V1.1 could add a `--add-frontmatter` flag or a startup prompt that asks the user to fill in known fields before parsing.
+
+**B6. Probability counter-intuitively went UP between Day 3 and Day 4.** Day 3 was 35.8%; Day 4 was 40.1%. Mathematically correct (Tier C agents found positive signals that diluted the Tier A negative-severity contribution) but visually surprising. Worth a note in `aggregator.md` body and in `audit.md` template explaining why "more agents active" does not always mean "lower probability."
+
+**B7. Some Day 1-2 docs reference the .claude/skills/agents/ path that we deviated from on Day 2-prep.** The build prompt itself uses the old path; that is intentionally untouched. But cross-references within our own `docs/` and inside the agent prompts need a sweep. Risk: low. Confusion potential: small but real.
+
+### C. Issues end-to-end testing will surface (TBD — placeholder)
+
+Day 5 ends with end-to-end testing. Capture issues that surface there in this subsection so they are addressed alongside A1 and B-items in the cleanup pass. Expected categories:
+
+- Parser edge cases (CVs with unusual formatting, JDs in formats other than the four we tested).
+- Agent prompts that produce wrong-feeling verdicts on specific real CV+JD pairs (fix by tuning prompts).
+- Aggregator math edge cases (e.g. all-CRITICAL or all-LOW scenarios that produce unrealistic numbers).
+- Schema-validation failures we did not anticipate.
+- Performance issues if the audit takes too long.
+- Documentation gaps where forkers get stuck.
+
+Empty until testing happens. Will be filled during Day 5/6 testing session.
+
+### D. Execution plan for the cleanup pass
+
+Once Day 5 closes and end-to-end testing produces section C, execute in this order:
+
+1. **A1 first (structured-extraction architecture).** Largest blast radius, highest leverage. Do this in a focused session of 3-4 hours. Updates SCHEMAS.md, parser, router, all 11 agents.
+2. **A2 falls out of A1 mostly.** What remains (config-driven firm lists) is 30 minutes of YAML extraction.
+3. **A3 (cross-domain validation).** Write three scrubbed-persona test CVs and JDs. Run audits. Fix any agent that produces nonsense verdicts on a non-AI domain.
+4. **B-items in priority order.** B3 (router pre-aggregating applications_log) first because it unblocks two agents from UNKNOWN. Others as time permits.
+5. **C-items as a sweep.** Whatever testing surfaces.
+
+Estimated total cleanup work: 6-8 hours of focused effort. Could be one long session or split across two.
+
+After this cleanup, V1.1 begins with a clean architecture: structured extraction, config-driven heuristics, domain-portable, cross-domain-validated, calibration-ready.
+
+### E. Why we are not fixing this now
+
+Three honest reasons logged for the record:
+
+1. **Current state works for Santosh's profile and the interviewer demo.** Heuristics fit the data; verdicts are sensible; numbers are believable. Refactoring under demo time pressure introduces risk for no immediate user-visible benefit.
+2. **End-to-end testing on Day 5/6 will surface MORE issues.** Doing the cleanup now means another cleanup pass after testing. Doing both together is more efficient.
+3. **Day 5 documentation builds the launch artifact.** ROADMAP.md, README polish, V1.1 placeholders — these are best done with stable code beneath them, not while the architecture is shifting.
+
+The cost of the decision is that V1 ships with hardcoded prompts and a fragile parse-many-times architecture. The mitigation is that this list exists, is on GitHub the moment SESSION_RESUME is committed, and the cleanup pass is scoped and ready.
+
+---
+
+## 10. How to update this file each session (pattern to preserve)
 
 At the end of every meaningful work session:
 1. Update the "Last updated" date at top.
