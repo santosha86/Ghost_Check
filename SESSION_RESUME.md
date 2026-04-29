@@ -558,18 +558,25 @@ Plan: alongside A1's structured-extraction work, write three scrubbed-persona ex
 
 **B7. Some Day 1-2 docs reference the .claude/skills/agents/ path that we deviated from on Day 2-prep.** The build prompt itself uses the old path; that is intentionally untouched. But cross-references within our own `docs/` and inside the agent prompts need a sweep. Risk: low. Confusion potential: small but real.
 
-### C. Issues end-to-end testing will surface (TBD — placeholder)
+### C. Issues end-to-end testing surfaced
 
-Day 5 ends with end-to-end testing. Capture issues that surface there in this subsection so they are addressed alongside A1 and B-items in the cleanup pass. Expected categories:
+End-of-Day-5 smoke test (2026-04-29, Santosh's profile + JD) — runtime stability validation after Day 5 added documentation only. Findings:
 
-- Parser edge cases (CVs with unusual formatting, JDs in formats other than the four we tested).
-- Agent prompts that produce wrong-feeling verdicts on specific real CV+JD pairs (fix by tuning prompts).
-- Aggregator math edge cases (e.g. all-CRITICAL or all-LOW scenarios that produce unrealistic numbers).
-- Schema-validation failures we did not anticipate.
-- Performance issues if the audit takes too long.
-- Documentation gaps where forkers get stuck.
+**C1. Smoke test PASSED.** Pipeline runs end-to-end. All eleven V1 agents produce verdicts (or honest UNKNOWN). Aggregator math reproduces deterministically — z = 0.500, callback probability = 40.13%, identical to Day-4-close audit. Day 5's documentation additions made no runtime behaviour change. This is the expected outcome and confirms the system is stable to ship at the V1 architecture level.
 
-Empty until testing happens. Will be filled during Day 5/6 testing session.
+**C2. Audit metadata could be sharper about "missing inputs cost."** Four agents (posting-decoder, funnel-math, channel-mix, stale-detector) returned UNKNOWN due to data-limited inputs. The audit's metadata footer says they are UNKNOWN but does not quantify how the probability would shift if those inputs were present. Future enhancement: surface "if you logged X applications, the probability would land in N-M range; if you added posted_date to JD frontmatter, the probability would shift by Y points."
+
+**C3. The Day-3 company-classifier fix is load-bearing for Santosh's specific case.** Without the placeholder-name + text-inferred-company-type fallback, `it-services-discount` would have returned UNKNOWN — losing the most diagnostic agent on this exact CV+JD pair. The smoke test confirmed the fix works as designed. Lesson: validation cycles that surface design fixes during implementation (rather than after) are higher-value than post-launch fixes. Continue this practice on the Day-6 cleanup pass — re-run the audit after each significant fix to confirm the system still produces sensible verdicts.
+
+**C4. Cross-domain test deferred but recommended.** The smoke test ran on Santosh's CV+JD only. Cross-domain validation (electrical engineer or finance director CV + matching JD) is the genuinely informative test — it would surface whether section 9-A2 (hardcoded content in prompts) actually breaks the system or merely produces slightly-awkward fix-hint examples. Worth doing before the cleanup pass executes A1, so cleanup priorities reflect what cross-domain testing reveals.
+
+**C5. Performance: ~30-90 seconds for a manual step-through on Santosh's CV+JD.** Acceptable for single-user V1. With actual Claude Code Agent-tool dispatch (which requires session restart so subagents are auto-discovered), eleven parallel subagent contexts would run faster than the manual step-through. Worth confirming once the next real `/ghostcheck audit` invocation happens post-restart.
+
+**C6. No parser edge-case tests run yet.** Markdown CV, plain-text JD, malformed inputs — all unspecified. Recommend: include a markdown-CV smoke test in the cross-domain test (write the scrubbed-persona CV as `.md`, not `.pdf`, to exercise the Read-tool path independently of MarkItDown).
+
+**C7. No load test or batch test.** Outside V1 scope; mentioned for completeness.
+
+**C8. Schema-validation under unusual agent output.** Not actively tested. The ats-simulator's coverage-based scoring relies on string matching that could conceivably produce edge-case scores; the hm-deep-read's bullet-level scoring depends on Claude correctly counting strong-vs-weak verbs across 30+ bullets. Both are areas where a deliberately adversarial test (a CV designed to fool the agent) might reveal brittleness. Not blocking V1 ship; flagged for the cleanup pass.
 
 ### D. Execution plan for the cleanup pass
 
