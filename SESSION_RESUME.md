@@ -307,24 +307,26 @@ Terms he may still want deeper treatment on (he hasn't asked yet, but watch for 
 
 ## 7. Next step when session resumes
 
-### ACTIVE PRIORITY: Day 4 — Tier B and Tier C agents
+### ACTIVE PRIORITY: Day 5 — documentation, V1.1 placeholders, launch prep
 
-Day 3 closed on 2026-04-25 (same calendar date as Day 2 — full-day push). All four Tier A agents and three enrichment skills are written, committed, and validated against Santosh's real CV+JD pair. End-of-Day-3 audit at `applications/2026-04-25_strategy-ai-architect-chief_2/audit.md` produced 35.8% callback probability (down from Day-2's 64.6%), with `it-services-discount` returning HIGH severity — matching Santosh's hunch about the real silence driver on this application.
+Day 4 closed on 2026-04-29. All eleven agents are written and validated. End-of-Day-4 audit on Santosh's real CV+JD pair landed at 40.1% callback probability — slightly higher than Day-3's 35.8% because the new Tier C agents (ats-simulator LOW, recruiter-30sec MEDIUM, hm-deep-read MEDIUM) found genuine positive signals that diluted the high-severity contribution from Tier A in the weighted average. Four agents (posting-decoder, funnel-math, channel-mix, stale-detector) returned UNKNOWN due to data-limited inputs (no application-history log, no JD posting date) — these are exactly the dimensions that need user-logged data over time to fire. The audit at `applications/2026-04-29_strategy-ai-architect-chief/audit.md` is appropriately humble about what V1 with no logged application history can and cannot measure.
 
-Day 4 scope: six remaining agents (Tier B and Tier C). No new enrichment skills required — Tier B reads `applications/*/outcome.md` and `applications/*/channel.md` (user-written) plus `external_context.jd_age_days` already populated; Tier C reads CV and JD only. After Day 4 lands, all 11 agents are live and the audit re-run produces the full V1 picture.
+**The full pipeline is functional and on GitHub.** V1's runtime — router, parser, eleven subagents in isolated contexts, deterministic aggregator — runs end-to-end on real data and produces honest, schema-faithful audit artefacts.
 
-Files for Day 4:
+Day 5 scope (per build prompt section 11):
 
 ```
-.claude/agents/funnel-math.md         — B1 (application-to-callback rate vs benchmark)
-.claude/agents/channel-mix.md         — B2 (channel distribution vs senior-tier benchmarks)
-.claude/agents/stale-detector.md      — B3 (late-application flag, reads jd_age_days)
-.claude/agents/ats-simulator.md       — C1 (keyword + years + title match)
-.claude/agents/recruiter-30sec.md     — C2 (first-scan impression: companies, tenure, trajectory)
-.claude/agents/hm-deep-read.md        — C3 (decisions owned vs activities performed)
+docs/ROADMAP.md                                — V1 to V1.1 to V1.2 to V2 plan
+.claude/skills/agents/V1_1-pattern-detector.md  — placeholder skill file showing the V1.1 batch pattern agent
+.claude/skills/wiki-compiler/wiki-compile.md    — V1.2 placeholder for Karpathy LLM Wiki pattern
+patterns/README.md, wiki/README.md              — empty-folder placeholders explaining the V1.1 / V1.2 use
+applications/README.md                          — explains the YYYY-MM-DD_<slug> folder convention plus how to log outcomes and channels
+Final README polish                             — bring the README in line with end-of-V1 reality (all 11 agents live, point at the audit artefact)
 ```
 
-Each follows the bucket-classifier and Day-3-agents template — no new design surface, just specialisation. Estimated 15 minutes per file with Teach Mode on, plus a final end-of-Day-4 audit re-run.
+End of Day 5: V1 launch-ready. Repo links to GitHub. Architecture documents are coherent. Forkers can clone and run.
+
+V1.1 Hermes/GEPA self-evolution and V1.2 calibration loop are documented in the new ROADMAP but not implemented. Per the build prompt those are post-V1 work.
 
 ### Ground-truth check (completed 2026-04-25)
 
@@ -454,13 +456,11 @@ Then: **end-to-end test** — run `/ghostcheck audit` on Santosh's real `cv.md` 
 > - Workflow: if in web sandbox, do not try `git push` — returns 403. On personal laptop, `git push` works.
 > - Learning notes stay in Santosh's personal Claude Project (no `docs/TEACH_NOTES/` folder in the repo).
 > - **Path-1 bundle-and-dispatch is locked.** Day-2 `SKILL.md` reads all user-layer files and dispatches to each agent with only the inputs its frontmatter declares. No schema change needed.
-> - **Day 2 and Day 3 are both CLOSED (both on 2026-04-25 — full-day push).** All five Tier A agents are live (bucket-classifier, google-test, posting-decoder, it-services-discount, headline-filter) plus three enrichment skills (google-test-lookup, jd-age-detector, company-classifier).
-> - End-of-Day-3 validation on Santosh's real CV plus PowerPoint JD: callback probability dropped from 64.6% (Day 2 close) to 35.8% (Day 3 close). `it-services-discount` returned HIGH severity, confirming Santosh's hunch about the silence driver on this specific application. Audit at `applications/2026-04-25_strategy-ai-architect-chief_2/audit.md`.
-> - Real design gap surfaced and fixed during Day 3 validation: company-classifier was returning null when no company name was extractable from the JD (common with PowerPoint deck JDs), which broke it-services-discount on this exact case. Fix applied to both files; saved as the "empirical heuristics" feedback memory. Architecture validated against ground truth.
-> - **ACTIVE: Day 4 — Tier B and Tier C agents.** Build prompt section 11 Day 4 scope: `funnel-math`, `channel-mix`, `stale-detector` (Tier B); `ats-simulator`, `recruiter-30sec`, `hm-deep-read` (Tier C). No new enrichment skills required. Each follows the bucket-classifier and Day-3-agents template.
-> - The architecture slide deck (Path 3) is deferred to Day 5 launch prep. Locked 8-slide outline still in section 6 when we get to it.
+> - **Days 2, 3, and 4 are all CLOSED.** All eleven agents are written, all four enrichment skills are written, the runtime pipeline runs end-to-end. Day 4 close audit at `applications/2026-04-29_strategy-ai-architect-chief/audit.md` produced 40.1% callback probability with seven of eleven agents active (four UNKNOWN due to data-limited inputs — applications log empty, JD has no posting date). The system is honest about what it can and cannot measure.
+> - **ACTIVE: Day 5 — documentation, V1.1 placeholders, launch prep.** Build prompt section 11 Day 5 scope: `docs/ROADMAP.md`, V1.1 placeholder skill files for `pattern-detector` and `wiki-compile`, `patterns/README.md` and `wiki/README.md` and `applications/README.md` placeholders, final README polish. Roughly 6-8 small files; about 45-60 minutes with Teach Mode.
+> - Architecture slide deck (Path 3) was deferred from Day 3 prep — the 8-slide outline is captured in section 6 (2026-04-22) and could be revisited during or after Day 5 if Santosh has time to install `frontend-slides` skill.
 >
-> Teach Mode is on. Day 4 expectation: by the end of Day 4, all 11 agents are live. Re-running the audit should land in the 15-30% range if `channel-mix` flags a channel mismatch (likely if the application went via a non-referral channel). That convergence toward the ground-truth ghosted outcome is the V1-functional milestone.
+> Teach Mode is on. Day 5 is documentation and polish — different rhythm from Days 2-4. The end goal is V1 launch-ready: forkers can clone the repo, follow the README, and run their first audit on their own CV.
 
 Do NOT start writing files until he says to proceed.
 
