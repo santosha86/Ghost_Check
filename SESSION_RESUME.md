@@ -607,19 +607,23 @@ All eleven agent files updated. Each agent's frontmatter `inputs:` now declares 
 
 Per-agent input declarations are tailored to each agent's actual needs — bucket-classifier reads bullets and tier signals; google-test reads candidate name and google_results plus market_leadership requirement; it-services-discount reads role.is_services_firm flags and target consulting/services signals; etc. See the eleven agent files for the specific input lists.
 
-**Body sweep — "Inputs I receive" section DONE (2026-04-28):**
+**Body sweep — "Inputs I receive" section DONE (2026-04-30):**
 
 All eleven agent body sections under "## Inputs I receive" have been rewritten to describe the structured-field inputs by name, matching their frontmatter declarations. Each agent's body now correctly tells Claude what to expect from the router bundle: `candidate.recent_roles` for bucket-classifier and hm-deep-read; `external_context.google_results` for google-test; `external_context.jd_age_days` for stale-detector and posting-decoder; `applications_log` for funnel-math and channel-mix; etc.
 
 Router contract and agent expectation are now aligned. The system is no longer in the broken intermediate state where router dispatched structured fields but agents described `cv_text`/`jd_text`.
 
-**Body sweep — remaining items PENDING (tomorrow):**
+**Body sweep — remaining items PENDING (tomorrow), in priority order:**
 
-1. Hardcoded firm-name lists removed from `it-services-discount.md` body section "What I look for in the CV" and from `company-classifier.md` body — both should defer to `config/known_firms.yml` instead of restating the list inline.
-2. Hardcoded Santosh-specific fix-hint examples (SABIC, Nor Consult, STC mentions in `hm-deep-read.md`, `headline-filter.md`, `it-services-discount.md`, `recruiter-30sec.md`) replaced with the canonical Rohan Mehta examples from `profile/cv.example.md`, marked illustrative.
-3. Identity sentences referencing "senior AI architect" (e.g. funnel-math.md "## My job") generalised to domain-agnostic language so the prompts don't presume the AI domain.
+1. **Halt-clause variable names (functional bug — fix first).** Eight agent files still reference `cv_text` / `jd_text` in their "Halt cleanly on missing input" rules at the bottom of the file. The router does not pass those names, so the halt branch checks fields that do not exist in the bundle; UNKNOWN reasons cite the wrong field name. Soft-broken: works in the happy path but mis-reports input-missing failures. Files: `bucket-classifier.md:118`, `ats-simulator.md:135`, `posting-decoder.md:140`, `headline-filter.md:57`, `headline-filter.md:120`, `recruiter-30sec.md:129`, `hm-deep-read.md:101`. Fix: replace with the structured-field name the agent actually consumes (e.g. "if `candidate.recent_roles` is empty" for bucket-classifier).
 
-Estimated: 1-1.5 hours focused work next session.
+2. **Hardcoded firm-name lists in body** — `it-services-discount.md:51` recites the full Wipro/TCS/Infosys/Cognizant/Nor Consult list inline; `company-classifier.md` body does the same. Domain forks now have to edit the prompt and `config/known_firms.yml` and keep them in sync. Body should defer to `config/known_firms.yml` instead of restating the list.
+
+3. **Hardcoded Santosh-specific fix-hint examples** (SABIC, Nor Consult, STC, SEC, Saudi Aramco) appear across `hm-deep-read.md`, `headline-filter.md`, `it-services-discount.md`, `recruiter-30sec.md`, `ats-simulator.md`, `google-test.md`. Replace with the canonical Rohan Mehta examples from `profile/cv.example.md`, marked illustrative.
+
+4. **AI-domain identity language**. `funnel-math.md:21` opens "A senior AI architect / principal / director-level candidate" — identity-coupled to the AI domain. Also AI/GenAI/LangGraph/RAG vocabulary baked into example bullets across `hm-deep-read`, `ats-simulator`, `headline-filter`. Generalise so the prompts do not presume the AI domain.
+
+Estimated: 1.5-2 hours focused work next session. Item 1 is the only one with functional impact; items 2-4 are domain-portability and prompt-cleanliness.
 
 **Then execute (in priority order):**
 
