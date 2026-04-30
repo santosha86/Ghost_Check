@@ -1,0 +1,125 @@
+# config/known_firms.yml — domain-specific firm name lists
+#
+# Used by:
+#   - .claude/agents/it-services-discount.md (services-firm tenure detection)
+#   - .claude/skills/enrichment/company-classifier.md (target-company classification)
+#   - .claude/skills/parser/markitdown-parse.md (Role.is_services_firm computation)
+#
+# Forking for a different domain: add or replace entries below. The agents and
+# enrichment skills reference this file by path; their prompt bodies do NOT
+# hardcode firm names. To target electrical engineering, replace the IT-services
+# list with engineering-services firms (Tata Elxsi, L&T Technology Services,
+# Cyient, Quest Global, KPIT, HCL Engineering, etc.). To target finance, replace
+# consulting and bigtech lists with banks, hedge funds, and fintech companies.
+#
+# Format note: each list entry can have aliases as a sub-list to handle the
+# common name variations (e.g., "TCS" vs "Tata Consultancy Services").
+
+# IT-services firms — used by it-services-discount agent.
+# Tenure at any of these triggers the silent-downgrade signal at top-tier
+# consulting / bigtech / product target firms.
+it_services:
+  - name: Wipro
+    aliases: [Wipro Limited, Wipro Arabia, Wipro Arabia Ltd, Wipro Technologies]
+  - name: Tata Consultancy Services
+    aliases: [TCS]
+  - name: Infosys
+    aliases: [Infosys Limited, Infosys Technologies]
+  - name: HCL Technologies
+    aliases: [HCLTech, HCL]
+  - name: Cognizant
+    aliases: [Cognizant Technology Solutions, CTS]
+  - name: Tech Mahindra
+    aliases: [TechM]
+  - name: Mphasis
+  - name: LTIMindtree
+    aliases: [L&T Infotech, LTI, Mindtree]
+  - name: Zensar
+  - name: Hexaware
+  - name: NIIT Technologies
+    aliases: [Coforge]
+  - name: Cyient
+  - name: Persistent Systems
+  - name: Mastek
+  - name: Birlasoft
+  - name: Sonata Software
+  - name: KPIT
+  - name: DXC Technology
+    aliases: [DXC]
+  - name: Capgemini
+    aliases: [Capgemini Engineering, Sogeti]
+    notes: services arm; Capgemini Invent strategy arm classifies as consulting
+  - name: Atos
+  - name: Sopra Steria
+  - name: NTT DATA
+  - name: Fujitsu
+  - name: Unisys
+  - name: IBM Consulting
+    aliases: [IBM Global Services]
+    notes: IBM Research and IBM Watson are bigtech, not services
+  # Regional Gulf services firms
+  - name: Nor Consult Telematics
+    aliases: [Nor Consult]
+  - name: Mannai
+  - name: Ittihad
+
+# Top-tier consulting firms — used by company-classifier agent for target-side
+# classification. These are firms where IT-services-tenured candidates face the
+# strongest silent downgrade.
+consulting:
+  - name: McKinsey & Company
+    aliases: [McKinsey, McKinsey and Company]
+  - name: Boston Consulting Group
+    aliases: [BCG]
+  - name: Bain & Company
+    aliases: [Bain]
+  - name: Oliver Wyman
+  - name: Kearney
+    aliases: [AT Kearney]
+  - name: LEK Consulting
+    aliases: [LEK]
+  - name: Roland Berger
+  - name: Accenture
+    notes: services and consulting hybrid; Accenture Strategy classifies stronger as consulting
+  - name: Deloitte
+    notes: Deloitte Consulting and Deloitte Strategy stronger as consulting; Deloitte Risk and Tax services
+  - name: PwC
+    aliases: [PricewaterhouseCoopers, Strategy&]
+  - name: EY
+    aliases: [Ernst & Young, EY-Parthenon]
+  - name: KPMG
+  - name: Booz Allen Hamilton
+  - name: ZS Associates
+
+# Big-tech firms — used by company-classifier for target-side classification.
+# Targets at these firms also trigger the IT-services discount.
+bigtech:
+  - name: Google
+    aliases: [Alphabet]
+  - name: Meta
+    aliases: [Facebook]
+  - name: Microsoft
+  - name: Apple
+  - name: Amazon
+  - name: Netflix
+  - name: Salesforce
+  - name: IBM
+    notes: IBM Research and IBM technology arm; IBM Consulting is services
+  - name: Oracle
+  - name: NVIDIA
+  - name: Adobe
+  - name: Tesla
+  - name: SpaceX
+  - name: OpenAI
+  - name: Anthropic
+  - name: ByteDance
+    aliases: [TikTok]
+  - name: Tencent
+  - name: Alibaba
+
+# Schema notes for forkers and the V1.1 Hermes/GEPA self-evolution work
+# When V1.2 calibration runs, the firm names get tagged with per-firm callback
+# rates from anonymised outcome data. The schema is extensible — add fields
+# under each firm entry as needed without breaking existing entries. Required
+# field per entry: `name`. Optional: `aliases`, `notes`, future calibration
+# fields.

@@ -16,144 +16,175 @@ allowed-tools:
   - Agent
 ---
 
-# /ghostcheck audit — Router skill
+# /ghostcheck audit — Router skill (V1 Day-6 cleanup version)
 
-When the user runs `/ghostcheck audit --cv <path> --jd <path>`, follow the eight steps below in order. Fail closed at every step on any error: surface a clear message and stop. Do not guess, do not produce a partial audit, do not hallucinate a verdict.
+When the user runs `/ghostcheck audit --cv <path> --jd <path>`, follow the nine steps below in order. Fail closed at every step on any error: surface a clear message and stop. Do not guess, do not produce a partial audit, do not hallucinate a verdict.
+
+The major architectural change from prior versions: the router invokes the parser to extract STRUCTURED profiles (`CandidateProfile` and `JobProfile` per `docs/SCHEMAS.md` sections 15-16) instead of passing raw `cv_text` and `jd_text` to agents. Every agent now reads named fields from the structured profiles, declared in the agent's frontmatter `inputs:` list as dotted-path references (e.g. `candidate.recent_roles`, `target.seniority_keyword`).
 
 ## Files this audit loads (Sources of Truth)
 
 | File | Purpose | Fallback behaviour |
 |---|---|---|
-| `<cv path>` (from --cv) | The CV being audited | If --cv is omitted, look for `profile/cv.md`. If absent, fall back to `profile/cv.example.md` with a warning. |
+| `<cv path>` (from --cv) | The CV being audited | If --cv omitted, look for `profile/cv.md`. If absent, fall back to `profile/cv.example.md` with a warning. |
 | `<jd path>` (from --jd) | The JD being audited | Required, no fallback. Halt if missing. |
 | `config/profile.yml` | UserProfile schema (target titles, locations, seniority, company types, channels) | Fall back to `config/profile.example.yml` with a warning. |
 | `profile/style.md` | UserStyle (free-form constraints and narrative) | Fall back to `profile/style.example.md` with a warning. |
-| `config/weights.yml` | Per-agent weights for the aggregator (sum = 1.0) | Required, no fallback. Halt if missing. |
-
-The router reads each user-layer file once and bundles the contents per the Path 1 (Bundle-and-dispatch) pattern. Each agent receives only the inputs declared in its own frontmatter.
+| `config/weights.yml` | Per-agent weights for the aggregator | Required. Halt if missing. |
+| `config/known_firms.yml` | Domain-specific firm name lists used by `it-services-discount` and `company-classifier` | Required. Halt if missing. (V1 cleanup adds this file.) |
 
 ## Step 1 — Validate input file extensions (Level 1 validation)
 
 For both CV and JD paths:
 
-- Confirm the file exists at the given path. If not, halt: `"File not found at <path>. Halt audit."`
-- Confirm the extension is in the allowed list:
-  - CV allowed: `.md`, `.pdf`, `.docx`
-  - JD allowed: `.md`, `.pdf`, `.docx`, `.pptx`, `.txt`
-- If the extension is outside the list, halt: `"Unsupported file type for <CV|JD> at <path>. Halt audit."`
+- Confirm the file exists. If not, halt: `"File not found at <path>. Halt audit."`
+- Confirm extension is in the allowed list:
+  - CV: `.md`, `.pdf`, `.docx`
+  - JD: `.md`, `.pdf`, `.docx`, `.pptx`, `.txt`
+- If extension is outside the list, halt: `"Unsupported file type for <CV|JD> at <path>. Halt audit."`
 
-If `--cv` is omitted, look for `profile/cv.md`. If that does not exist, fall back to `profile/cv.example.md` and print: `"Warning: using profile/cv.example.md (Rohan Mehta example persona). Set up your real profile/cv.md for accurate audits."`
+If `--cv` is omitted, look for `profile/cv.md`. If absent, fall back to `profile/cv.example.md` with: `"Warning: using profile/cv.example.md (Rohan Mehta example persona). Set up your real profile/cv.md for accurate audits."`
 
-## Step 2 — Parse to markdown
+## Step 2 — Parse to structured profiles (CV plus JD)
 
-For any non-markdown input (`.pdf`, `.docx`, `.pptx`, `.txt`), invoke the parser skill at `.claude/skills/parser/markitdown-parse.md` to convert the file to markdown text. If the input is already `.md`, read it directly with the Read tool.
+Invoke the parser skill at `.claude/skills/parser/markitdown-parse.md` TWICE:
 
-The result of this step is two strings: `cv_text` and `jd_text`. Both are markdown.
+1. **First call** with `file_path = <cv path>` and `profile_type = "cv"`. The parser produces `{markdown_text: <CV markdown>, profile: <CandidateProfile object>}`. Hold the profile as `candidate`. Hold the markdown as `cv_text_fallback`.
 
-If parsing fails for either, surface the parser's error and halt: `"Parser failed for <CV|JD> at <path>: <error>. Halt audit."`
+2. **Second call** with `file_path = <jd path>` and `profile_type = "jd"`. The parser produces `{markdown_text: <JD markdown>, profile: <JobProfile object>}`. Hold the profile as `target`. Hold the markdown as `jd_text_fallback`.
+
+If parsing fails for either, surface the error and halt.
 
 ## Step 3 — Validate document type (Level 3 validation)
 
-Make a single LLM classification call with the following prompt:
+Make a single LLM classification call using `cv_text_fallback` and `jd_text_fallback`:
 
 ```
-Below are two documents. Classify each as CV, JD, or other. Be conservative — if a document looks ambiguous or could plausibly be the wrong type, return "other".
+Below are two documents. Classify each as CV, JD, or other. Be conservative.
 
 Document 1 (claimed to be a CV — first 2000 characters):
-{cv_text first 2000 chars}
+{cv_text_fallback first 2000 chars}
 
 Document 2 (claimed to be a JD — first 2000 characters):
-{jd_text first 2000 chars}
+{jd_text_fallback first 2000 chars}
 
-Return JSON exactly in this shape:
+Return JSON:
 {
   "doc1_type": "cv" | "jd" | "other",
   "doc1_confidence": 0.0 to 1.0,
   "doc2_type": "cv" | "jd" | "other",
   "doc2_confidence": 0.0 to 1.0,
-  "reason": "one-line explanation of why the verdicts are what they are"
+  "reason": "brief explanation"
 }
 ```
 
-If `doc1_type` is not `"cv"` with confidence above 0.7, halt: `"Document at <cv path> does not appear to be a CV (classifier verdict: <doc1_type>, confidence <doc1_confidence>, reason: <reason>). Halt audit."`
-
-If `doc2_type` is not `"jd"` with confidence above 0.7, halt: `"Document at <jd path> does not appear to be a JD (classifier verdict: <doc2_type>, confidence <doc2_confidence>, reason: <reason>). Halt audit."`
+If `doc1_type` not `"cv"` with confidence above 0.7, halt with classifier verdict and reason.
+If `doc2_type` not `"jd"` with confidence above 0.7, halt with classifier verdict and reason.
 
 ## Step 4 — Load user-layer files
 
-Read these files in order:
-
-- `config/profile.yml` — parse as YAML, validate against the `UserProfile` schema in `docs/SCHEMAS.md` section 8. Required fields: `target_titles`, `target_locations`, `target_seniority`. If file missing, fall back to `config/profile.example.yml` and print `"Warning: using config/profile.example.yml (Rohan Mehta example targets). Set up your real config/profile.yml for accurate audits."`
-- `profile/style.md` — read as markdown. If file missing, fall back to `profile/style.example.md` and print the equivalent warning.
+- `config/profile.yml` — parse as YAML, validate against `UserProfile` schema (`docs/SCHEMAS.md` section 8). If absent, fall back to `config/profile.example.yml` with a warning.
+- `profile/style.md` — read as markdown. If absent, fall back to `profile/style.example.md` with a warning.
 
 Hold these as `user_profile` (parsed object) and `user_style` (raw markdown string).
 
-## Step 5 — Build ExternalContext (V1 minimal)
+## Step 5 — Build ExternalContext
 
-Construct the `ExternalContext` object per `docs/SCHEMAS.md` section 5.
+Construct the `ExternalContext` object per `docs/SCHEMAS.md` section 5:
 
-V1 minimal population:
-
-- `jd_age_days`: parse from JD frontmatter `posted_date` if present; compute days from today. If absent, set to `null`.
-- `jd_age_source`: `"user_provided"` if the JD frontmatter had `posted_date`, else `"unknown"`.
-- `google_results`: empty list. (V1.1 will wire up the `google-test-lookup` enrichment skill.)
-- `enrichment_errors`: empty list.
-- `company`: `null`. (V1.1 will wire up the `company-enricher` skill that builds the hybrid Company object from JD frontmatter and web search.)
+- `jd_age_days`, `jd_age_source` — invoke `.claude/skills/enrichment/jd-age-detector.md` with `jd_text_fallback`.
+- `company` — invoke `.claude/skills/enrichment/company-classifier.md` with `jd_text_fallback`. If no company name extractable, the skill returns a placeholder name with `company_type` inferred from JD body language (per Day-3 fix).
+- `google_results` — invoke `.claude/skills/enrichment/google-test-lookup.md` with `candidate.name`. Returns the top 10 search results classified by surface type.
+- `enrichment_errors` — collect any non-fatal enrichment failures.
+- `cv_text_fallback`, `jd_text_fallback` — the raw markdown strings from Step 2 are also placed here for any agent that explicitly declares them as inputs.
 
 Hold this as `external_context`.
 
-## Step 6 — Dispatch to agents (Pattern B: subagent isolation)
+## Step 6 — Pre-aggregate applications_log
 
-For each agent in the active list below, invoke the Agent tool with:
+Walk `applications/*/` looking for `outcome.md` and `channel.md` files. For each subfolder that has at least one of those:
 
-- `subagent_type`: the agent's name (matches the filename of the subagent file under `.claude/agents/`, without `.md`)
-- Prompt body: the input bundle for that agent — only the inputs the agent declares in its YAML frontmatter `inputs:` field.
+- Parse `outcome.md` (one of `callback | screened | rejected | ghosted`, plus date and optional notes).
+- Parse `channel.md` (one of the six allowed channel values, plus date and optional notes).
 
-The agent's declared inputs are drawn from this fixed set: `cv_text`, `jd_text`, `user_profile`, `user_style`, `external_context`. Agents that do not need a particular input omit it from their frontmatter; the router passes only declared inputs.
+Build `applications_log` as a list of objects:
 
-Each agent runs in its own isolated context window. Agents must NOT see other agents' verdicts. This is the blind fan-out guarantee — preserved natively by Claude Code's subagent runtime when subagents are dispatched via the Agent tool.
+```yaml
+applications_log:
+  - slug: <folder-name>
+    audit_date: <YYYY-MM-DD>
+    outcome: <enum>
+    outcome_date: <YYYY-MM-DD>
+    channel: <enum>
+    channel_notes: <string or null>
+```
 
-**Active agent list (V1 starting state — only one agent exists; Days 3 and 4 add the rest):**
+If no logged outcomes exist (typical first-time use), `applications_log` is an empty list. The Tier B agents (`funnel-math`, `channel-mix`) handle empty list by returning UNKNOWN.
+
+## Step 7 — Dispatch to agents (Pattern B subagent isolation, structured-field inputs)
+
+For each agent in the active list, build a per-agent input bundle by resolving the agent's frontmatter `inputs:` declarations against the audit context. Each declared input is a dotted-path reference (e.g. `candidate.recent_roles`, `target.title`, `external_context.google_results`, `user_profile.target_seniority`, `applications_log`). Resolve each path; assemble the bundle.
+
+Then invoke the Agent tool with:
+
+- `subagent_type`: agent's name (matches the filename of `.claude/agents/<name>.md` without `.md`).
+- Prompt body: the per-agent input bundle as YAML, plus any agent-specific framing the prompt body of the subagent needs.
+
+Each subagent runs in its own isolated context window (Pattern B blind fan-out — preserved by Claude Code's subagent runtime). Subagents do NOT see each other's verdicts.
+
+Active agent list (eleven agents in V1):
 
 - `bucket-classifier`
+- `google-test`
+- `posting-decoder`
+- `it-services-discount`
+- `headline-filter`
+- `funnel-math`
+- `channel-mix`
+- `stale-detector`
+- `ats-simulator`
+- `recruiter-30sec`
+- `hm-deep-read`
 
 For each agent:
 
-1. Build the input bundle per the agent's frontmatter `inputs:` declaration.
-2. Invoke the Agent tool with `subagent_type` set to the agent's name and the input bundle as the prompt.
-3. Wait for the subagent to return its `AgentVerdict`.
-4. Validate the returned verdict against the `AgentVerdict` schema in `docs/SCHEMAS.md` section 1.
-5. If validation fails, coerce the verdict to UNKNOWN per `docs/SCHEMAS.md` section 12, with `unknown_reason: "schema_violation: <specific reason>"`.
+1. Resolve the agent's `inputs:` paths against `{candidate, target, external_context, user_profile, user_style, applications_log}`.
+2. Build the input bundle.
+3. Invoke Agent tool with `subagent_type = <agent-name>` and the bundle.
+4. Wait for the subagent's verdict.
+5. Validate against the `AgentVerdict` schema (`docs/SCHEMAS.md` section 1).
+6. If validation fails, coerce to UNKNOWN per section 12.
 
-Collect all validated verdicts into a list.
+Collect all validated verdicts.
 
-## Step 7 — Aggregate verdicts
+## Step 8 — Aggregate verdicts
 
 Invoke the aggregator skill at `.claude/skills/aggregator/aggregator.md` with:
 
-- The list of validated `AgentVerdict` objects from step 6.
-- The path to `config/weights.yml` (the aggregator reads this to apply per-agent weights).
-- The full audit context bundle: `cv_text`, `jd_text`, `user_profile`, `external_context`.
+- The list of validated `AgentVerdict` objects.
+- The path to `config/weights.yml`.
+- The full audit context: `candidate`, `target`, `user_profile`, `external_context`.
 
-The aggregator computes the callback probability via weighted-logistic over the verdicts (handling UNKNOWN renormalisation per `docs/SCHEMAS.md` section 13), then writes:
+The aggregator computes the callback probability via weighted-logistic over non-UNKNOWN verdicts (handling N for not-yet-implemented agents and U for UNKNOWN per `docs/SCHEMAS.md` section 13), then writes:
 
-- `applications/YYYY-MM-DD_<jd_slug>/audit.md` — the human-readable audit report
-- `applications/YYYY-MM-DD_<jd_slug>/verdicts.json` — the raw `AgentVerdict` objects
-- `applications/YYYY-MM-DD_<jd_slug>/context.json` — the `ExternalContext` used for this run
+- `applications/YYYY-MM-DD_<jd_slug>/audit.md`
+- `applications/YYYY-MM-DD_<jd_slug>/verdicts.json`
+- `applications/YYYY-MM-DD_<jd_slug>/context.json`
 
-The slug derives from the JD filename: take the basename, strip the extension, lowercase, and replace any non-alphanumeric character with a hyphen. Example: `Strategy AI Architect.pptx` becomes `strategy-ai-architect`. The date prefix is today's date in ISO format (`YYYY-MM-DD`). If the resulting folder already exists (re-running an audit on the same JD on the same day), append `_2`, `_3`, etc., per `docs/SCHEMAS.md` section 10's slug-collision rule.
+Slug derivation: take basename of JD path, strip extension, lowercase, replace non-alphanumeric with hyphen, collapse consecutive hyphens. Date prefix: today in `YYYY-MM-DD`. Slug-collision rule: append `_2`, `_3`, etc. per `docs/SCHEMAS.md` section 10.
 
-## Step 8 — Report to the user
+## Step 9 — Report
 
-Print the path to `applications/YYYY-MM-DD_<jd_slug>/audit.md` so the user can open it.
+Print the path to `applications/YYYY-MM-DD_<jd_slug>/audit.md`.
 
-If any step before the aggregator failed, the audit folder may be absent or partial. In that case, surface what worked, what failed, and how the user can recover (e.g., fix the input file, set up `profile/cv.md`, install MarkItDown if the parser failed because of a missing dependency).
+If any prior step failed, the audit folder may be partial or absent. Surface what worked, what failed, and how the user can recover.
 
-## Behavioural rules (invariants the router must respect)
+## Behavioural rules (invariants)
 
-- **Fail closed.** Any step that cannot complete cleanly halts the audit with a clear message. There are no partial audits in V1.
+- **Fail closed.** Any step that cannot complete cleanly halts the audit with a clear message.
 - **No agent-to-agent communication.** Agents run isolated. The router never replays one agent's verdict to another.
 - **The aggregator is the sole writer to `applications/`.** The router does not write audit artefacts directly.
-- **The router never modifies `profile/cv.md`, `profile/style.md`, `config/profile.yml`, `config/weights.yml`, or any JD file.** Those are user-owned inputs.
-- **Capability declarations are honoured.** If an agent's frontmatter declares no `web_search` capability, the router does not pass it web-search results — even if the input bundle would technically contain them.
-- **Honour the `AgentVerdict` schema absolutely.** Any verdict that does not validate becomes UNKNOWN; never patched, never repaired.
+- **The router never modifies user files.** `profile/cv.md`, `profile/style.md`, `config/profile.yml`, `config/weights.yml`, JD files — all read-only from the router's perspective.
+- **Capability declarations are honoured.** If an agent's frontmatter declares no `web_search` capability, the router does not pass it web-search results.
+- **Honour the `AgentVerdict` schema absolutely.** Any verdict that does not validate becomes UNKNOWN.
+- **Structured-profile fields are the primary interface to agents.** Raw markdown text is fallback only; agents declare structured-field paths in `inputs:`.

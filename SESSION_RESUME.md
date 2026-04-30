@@ -592,6 +592,30 @@ Estimated total cleanup work: 6-8 hours of focused effort. Could be one long ses
 
 After this cleanup, V1.1 begins with a clean architecture: structured extraction, config-driven heuristics, domain-portable, cross-domain-validated, calibration-ready.
 
+### F. Day-6 cleanup pass — execution log (in progress 2026-04-30)
+
+**Foundation committed (2026-04-30 morning):**
+
+- `docs/SCHEMAS.md` extended with section 15 (`CandidateProfile`, `Role`, `Project`, `Education`) and section 16 (`JobProfile`). Defines structured shapes the parser produces and every agent reads. About 200 lines of new schema content.
+- `.claude/skills/parser/markitdown-parse.md` rewritten as two-phase parser. Phase 1 (file-to-markdown) unchanged. Phase 2 (markdown-to-structured-profile) is new — extracts `CandidateProfile` or `JobProfile` per the schema based on the `profile_type` argument the router passes.
+- `.claude/skills/ghostcheck/SKILL.md` rewritten. Router now invokes parser twice (once per CV, once per JD), unpacks structured profiles, pre-aggregates `applications_log` from `applications/*/outcome.md` plus `channel.md`, dispatches to each agent with named-field inputs resolved from the agent's frontmatter `inputs:` declarations.
+- `config/known_firms.yml` created. IT-services list (Wipro, TCS, Infosys, etc.), top-tier consulting list, bigtech list. Replaces the hardcoded firm names previously in `it-services-discount.md` and `company-classifier.md` prompt bodies. Domain forks edit this file rather than editing prompts.
+
+**Pending (in this same session):**
+
+- Sweep all eleven agent files to update `inputs:` frontmatter from `[cv_text, jd_text, user_profile]` to dotted-path references against the new structured profiles (e.g. `[candidate.recent_roles, target.title, user_profile.target_seniority]`).
+- Sweep all eleven agent prompt bodies to reference named structured fields rather than re-parse raw text.
+- Replace Santosh-specific fix-hint examples with explicit references to `cv.example.md`'s Rohan Mehta canonical persona, marked illustrative.
+- Remove hardcoded firm name lists from `it-services-discount.md` body and `company-classifier.md` body (point at `config/known_firms.yml` instead).
+
+**Then execute (in priority order):**
+
+- A3 cross-domain validation: write a scrubbed-persona electrical-engineer CV plus matching JD, run audit, observe whether the new structured architecture produces sensible verdicts on a non-AI domain.
+- B-items as time permits.
+- Final smoke-test on Santosh's real CV+JD to confirm the audit still produces sensible output post-cleanup (probability should land in a similar 35-45% range; the cleanup is architectural, not heuristic-changing).
+
+The system is in an intermediate state during the agent sweep — router expects structured-field inputs but agents still expect raw `cv_text`/`jd_text`. Tests will fail in this interim. Do NOT run `/ghostcheck audit` until the agent sweep completes. The foundation commit at the top of this section is a recovery checkpoint in case the chat context compacts.
+
 ### E. Why we are not fixing this now
 
 Three honest reasons logged for the record:

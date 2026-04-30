@@ -328,3 +328,198 @@ This preserves a meaningful 0–100% callback probability (the score isn't artif
 This file is versioned implicitly by git. When `SCHEMAS.md` changes in a backwards-incompatible way, bump the `schema_version` field referenced in every skill's YAML frontmatter (to be added in the agent skill files). V2 (the Python service) will read this file and auto-generate Pydantic models from the field tables above — that is why the tables follow a regular structure.
 
 Fields not yet specified that V1.2 or V2 may add (documented here so forkers don't reinvent them): `confidence` (float) on `AgentVerdict`, structured `FixHint` object (target_field, before, after, rationale), `schema_version` string on every object.
+
+---
+
+## 15. `CandidateProfile` — structured representation of the CV
+
+Built by the parser skill from the parsed CV markdown. Every agent that needs CV content reads `CandidateProfile` named fields rather than re-parsing raw `cv_text`. Single source of truth for the candidate's data; eliminates per-agent re-parsing variance.
+
+| Field                | Type                         | Required | Notes                                                             |
+|----------------------|------------------------------|----------|-------------------------------------------------------------------|
+| `name`               | `string`                     | yes      | Full name as written in CV's H1 heading or top of page.           |
+| `current_title`      | `string`                     | yes      | Title from CV's tagline or first-listed role.                     |
+| `current_company`    | `string`                     | yes      | Most-recent employer name.                                        |
+| `location`           | `string`                     | optional | City, country, or "remote" if explicit.                           |
+| `total_years`        | `int`                        | optional | Sum of role-block durations; null if dates absent.                |
+| `summary`            | `string`                     | optional | The "Professional Summary" / "Profile" paragraph.                 |
+| `competencies`       | `list[string]`               | yes      | From "Core Competencies" / "Key Skills" section. May be empty.    |
+| `technologies`       | `list[string]`               | yes      | Tools / frameworks mentioned in CV body. May be empty.            |
+| `recent_roles`       | `list[Role]`                 | yes      | Roles within the last seven years. `min_length = 1` for non-empty CVs. |
+| `earlier_roles`      | `list[Role]`                 | optional | Roles older than seven years.                                     |
+| `key_projects`       | `list[Project]`              | optional | From "Key Architectural Projects" or equivalent section.          |
+| `education`          | `list[Education]`            | optional | Degrees and credentials.                                          |
+| `certifications`     | `list[string]`               | optional | Standalone certifications (CKAD, AWS SA, etc.).                   |
+| `extraction_sources` | `dict[field_name, SourceTag]`| yes      | Per-field provenance; `direct_extract` for fields read straight from text, `inferred` for fields the parser had to compute, `default` for fallback. |
+
+### `Role` — a single employment block
+
+| Field            | Type                   | Required | Notes                                                       |
+|------------------|------------------------|----------|-------------------------------------------------------------|
+| `title`          | `string`               | yes      | Role title at this employer.                                |
+| `company`        | `string`               | yes      | Employer name.                                              |
+| `location`       | `string`               | optional | City / country / region.                                    |
+| `start_date`     | `string`               | yes      | `YYYY` or `YYYY-MM` format.                                 |
+| `end_date`       | `string`               | yes      | `YYYY`, `YYYY-MM`, or `"Present"`.                          |
+| `duration_years` | `float`                | yes      | Computed from start and end. Used by `bucket-classifier`, `recruiter-30sec`, `it-services-discount`. |
+| `client`         | `string`               | optional | Named client (common in services-firm CVs). Used by `it-services-discount`. |
+| `bullets`        | `list[string]`         | yes      | Achievement bullets verbatim. Used by `hm-deep-read`, `bucket-classifier`. |
+| `is_services_firm` | `bool`               | optional | Computed by parser via known-firms config. Used by `it-services-discount`. |
+
+### `Project` — a key project block
+
+| Field             | Type     | Required | Notes                                          |
+|-------------------|----------|----------|------------------------------------------------|
+| `name`            | `string` | yes      | Project name.                                  |
+| `client`          | `string` | optional | Named client.                                  |
+| `objective`       | `string` | optional | Project objective text.                        |
+| `architecture`    | `string` | optional | Architecture description.                      |
+| `business_impact` | `string` | optional | Business outcome / metrics.                    |
+
+### `Education` — a single education block
+
+| Field         | Type                         | Required | Notes                                          |
+|---------------|------------------------------|----------|------------------------------------------------|
+| `degree`      | `string`                     | yes      | Degree name (Bachelor, Master, Doctorate, etc.). |
+| `field`       | `string`                     | optional | Field of study.                                |
+| `institution` | `string`                     | optional | School / university name.                       |
+| `year`        | `int`                        | optional | Year of completion.                            |
+| `status`      | enum: `completed \| pursuing`| yes      | Used by `bucket-classifier`, `headline-filter` for credential-tier signals. |
+| `country`     | `string`                     | optional | Country of institution.                        |
+
+### Example — a valid `CandidateProfile`
+
+```json
+{
+  "name": "Rohan Mehta",
+  "current_title": "AI Solution Architect & Delivery Lead",
+  "current_company": "Gulf AI Advisory",
+  "location": "Riyadh, Saudi Arabia",
+  "total_years": 16,
+  "summary": "AI Solution Architect and Delivery Lead with 16+ years of experience...",
+  "competencies": [
+    "AI Solution Architecture",
+    "GenAI / LLM Engineering",
+    "Multi-Team Delivery Leadership"
+  ],
+  "technologies": ["LangGraph", "LangChain", "Ollama", "Llama3", "FAISS", "Milvus"],
+  "recent_roles": [
+    {
+      "title": "Principal AI Solution Architect & Delivery Lead",
+      "company": "Gulf AI Advisory",
+      "location": "KSA",
+      "start_date": "2024",
+      "end_date": "Present",
+      "duration_years": 1.0,
+      "client": "a national utilities operator",
+      "bullets": [
+        "Served as design authority for SEC's enterprise AI programme...",
+        "Led technical solutioning and presented solution architecture..."
+      ],
+      "is_services_firm": true
+    }
+  ],
+  "education": [
+    {
+      "degree": "Doctorate",
+      "field": "Emerging Technologies, Generative AI Specialization",
+      "institution": "Golden Gate University",
+      "country": "USA",
+      "status": "pursuing"
+    }
+  ],
+  "extraction_sources": {
+    "name": "direct_extract",
+    "current_title": "direct_extract",
+    "total_years": "inferred",
+    "is_services_firm": "inferred"
+  }
+}
+```
+
+---
+
+## 16. `JobProfile` — structured representation of the JD
+
+Built by the parser skill from the parsed JD markdown. Every agent that needs JD content reads `JobProfile` named fields rather than re-parsing raw `jd_text`.
+
+| Field                              | Type                         | Required | Notes                                                       |
+|------------------------------------|------------------------------|----------|-------------------------------------------------------------|
+| `title`                            | `string`                     | yes      | JD's role title (often in the heading).                     |
+| `company_name`                     | `string`                     | optional | Hiring firm if extractable; null when JD says only "the firm". |
+| `location`                         | `string`                     | optional | Location requirement; "remote" if explicit.                 |
+| `seniority_keyword`                | `string`                     | optional | "Chief" / "Director" / "Principal" / etc. extracted from title or body. |
+| `summary`                          | `string`                     | optional | Role summary paragraph (often labelled "About the role").   |
+| `responsibilities`                 | `list[string]`               | yes      | Bulleted responsibilities. May be empty.                    |
+| `required_skills`                  | `list[string]`               | yes      | Hard requirements (technical skills, frameworks, tools).    |
+| `preferred_skills`                 | `list[string]`               | optional | Nice-to-haves.                                              |
+| `years_required`                   | `int`                        | optional | Minimum years of experience stated.                         |
+| `education_required`               | `string`                     | optional | Degree requirement (e.g. "Bachelor's required, Master's preferred"). |
+| `certifications_required`          | `list[string]`               | optional | Required certs.                                             |
+| `market_leadership_required`       | `bool`                       | yes      | Whether JD asks for thought leadership, external speaking, opportunity origination. Used by `google-test`, `headline-filter`. |
+| `consulting_signals_present`       | `bool`                       | yes      | Whether JD uses consulting language (client engagements, delivery playbooks, billable hours). Used by `it-services-discount`, `company-classifier`. |
+| `product_signals_present`          | `bool`                       | yes      | Whether JD uses product language (product roadmap, users, platform). Used by same agents. |
+| `services_signals_present`         | `bool`                       | yes      | Whether JD uses staff-augmentation / managed-services language. |
+| `extraction_sources`               | `dict[field_name, SourceTag]`| yes      | Per-field provenance.                                       |
+
+### Example — a valid `JobProfile`
+
+```json
+{
+  "title": "AI Solution Architect – Chief",
+  "company_name": null,
+  "location": null,
+  "seniority_keyword": "Chief",
+  "summary": "The AI Solution Architect Chief is a senior technology and AI leader responsible for shaping, selling, and delivering enterprise-scale AI solutions...",
+  "responsibilities": [
+    "Define end-to-end AI solution architectures spanning data platforms, AI/ML pipelines, GenAI stacks...",
+    "Act as design authority for complex, multi-vendor AI programs...",
+    "Originate and shape AI-led opportunities across priority industries..."
+  ],
+  "required_skills": [
+    "Enterprise AI solution architecture",
+    "GenAI/LLM architectures",
+    "MLOps",
+    "Cloud security",
+    "Executive communication"
+  ],
+  "preferred_skills": ["Cloud architecture certifications"],
+  "years_required": 15,
+  "education_required": "Bachelor's required, Master's or PhD preferred",
+  "market_leadership_required": true,
+  "consulting_signals_present": true,
+  "product_signals_present": false,
+  "services_signals_present": false,
+  "extraction_sources": {
+    "title": "direct_extract",
+    "company_name": "default",
+    "seniority_keyword": "direct_extract",
+    "market_leadership_required": "inferred",
+    "consulting_signals_present": "inferred"
+  }
+}
+```
+
+### `SourceTag` for `extraction_sources`
+
+The per-field provenance tag values, distinct from the `Company.sources` enum (section 6) because the contexts differ:
+
+```
+direct_extract  — read verbatim from a CV/JD section (e.g. title from "AI Solution Architect & Delivery Lead" line)
+inferred        — computed by the parser (e.g. total_years from summing role durations, is_services_firm from known-firms config)
+default         — fallback used because no signal was found (e.g. company_name = null when no name extractable)
+```
+
+This mirrors the per-field provenance pattern already in use for `Company.sources` (section 6) — so the audit reader can see where every CandidateProfile and JobProfile field came from and weight it appropriately.
+
+### How agents use these structures
+
+Every V1 agent's frontmatter `inputs:` field references the structured profile fields directly. Examples:
+
+- `bucket-classifier` declares `inputs: [candidate.recent_roles, candidate.summary, candidate.competencies, target.title, target.seniority_keyword, target.responsibilities, user_profile.target_seniority]`.
+- `headline-filter` declares `inputs: [candidate.name, candidate.current_title, candidate.current_company, target.title, target.seniority_keyword, user_profile.target_titles, user_profile.target_seniority]`.
+- `it-services-discount` declares `inputs: [candidate.recent_roles, candidate.earlier_roles, target.consulting_signals_present, target.services_signals_present, external_context.company.company_type]`.
+
+The router resolves the dotted-path references at runtime and passes only the declared fields to each agent. Same Pattern-B subagent isolation as before; same blind fan-out.
+
+The raw `cv_text` and `jd_text` strings remain available as fallback in `external_context.cv_text_fallback` and `external_context.jd_text_fallback` for cases where structured extraction fails partially — graceful degradation, never UNKNOWN-by-default.
