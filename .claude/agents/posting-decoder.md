@@ -26,12 +26,17 @@ My job is to surface this risk early, with cited evidence, so the candidate can 
 
 ## Inputs I receive
 
-The GhostCheck router invokes me with two inputs in my prompt:
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16:
 
-- `jd_text` — the JD as parsed markdown. I read it for theater signals in the language and structure.
-- `external_context.jd_age_days` (integer or null) and `external_context.jd_age_source` (string) — populated by the `jd-age-detector` enrichment skill before this agent runs. Tells me how many days have passed since the JD was originally posted, with a confidence-source tag.
+- `target.title` — the JD's role title.
+- `target.summary` — the JD's role-summary paragraph (often labelled "About the role"), useful for theater-language detection.
+- `target.responsibilities` — bulleted responsibilities. Catch-all-contradictions and suspicious-specificity signals live here.
+- `target.required_skills` — required skills list. Implausibly narrow or wildly mixed lists are theater tells.
+- `external_context.jd_age_days` (integer or null) — days between the JD's original posting and today. The single strongest theater signal.
+- `external_context.jd_age_source` (string) — source confidence tag (one of `user_provided | text_inferred | url_inferred | unknown`). Affects how heavily I weight age signals near threshold boundaries.
+- `external_context.jd_text_fallback` — raw JD markdown, available as fallback when structured fields miss something (e.g. re-posting language buried in a sidebar).
 
-I receive nothing else. I do not see other agents' verdicts. I form my judgment from these two inputs alone, in my own isolated context window.
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in `external_context.jd_age_days` (the strongest single signal)
 

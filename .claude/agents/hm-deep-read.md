@@ -25,9 +25,16 @@ I focus on the body of bullets, NOT the role-block headers (recruiter-30sec's do
 
 ## Inputs I receive
 
-- `cv_text` — CV as parsed markdown. I focus on bullet content within each role block.
-- `jd_text` — for tier and scope expectations.
-- `user_profile.target_seniority` — the candidate's declared target tier; shapes how strict to be on ownership-language.
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16. The CV's bullets are already extracted into per-role lists by the parser; I read them directly without re-parsing markdown.
+
+- `candidate.recent_roles` — list of `Role` objects from the last seven years. Each has a `bullets` list; the bullet content is what I score for ownership-language and outcomes.
+- `candidate.earlier_roles` — older roles. I read their bullets too but weight my aggregate ratio toward recent history.
+- `target.title` — the JD's role title for tier context.
+- `target.seniority_keyword` — JD's tier ("Chief", "Director", etc.). Drives the strict-versus-soft strong-bullet-ratio threshold.
+- `target.responsibilities` — JD's responsibilities; not directly scored, but useful for understanding what kind of bullet-content the role expects.
+- `user_profile.target_seniority` — declared target tier from `config/profile.yml`. Adjusts severity by one step harsher at director/vp tiers, softer at mid/senior tiers.
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in each bullet
 

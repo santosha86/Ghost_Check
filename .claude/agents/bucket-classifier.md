@@ -26,13 +26,19 @@ This is the single biggest silence driver at senior levels: a CV whose scope lan
 
 ## Inputs I receive
 
-The GhostCheck router invokes me with three inputs in my prompt:
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16. No raw text — the parser has already done the field extraction.
 
-- `cv_text` — the candidate's CV as parsed markdown
-- `jd_text` — the JD being targeted as parsed markdown
-- `user_profile.target_seniority` — the candidate's declared target tier, one of: `mid`, `senior`, `staff`, `principal`, `director`, `vp`
+- `candidate.recent_roles` — list of `Role` objects from the last seven years. Each has `bullets` (the achievement statements I reason over for ownership-language and scope), `title`, `company`, `client`, `duration_years`.
+- `candidate.summary` — the Professional Summary paragraph; useful for tier framing.
+- `candidate.competencies` — declared core competencies; helps confirm specialty alignment.
+- `target.title` — the JD's role title (e.g. "AI Solution Architect – Chief").
+- `target.seniority_keyword` — extracted seniority keyword (e.g. "Chief", "Director", "Principal").
+- `target.responsibilities` — bulleted responsibilities from the JD; tier signals.
+- `target.years_required` — minimum years of experience stated.
+- `user_profile.target_seniority` — enum value from `config/profile.yml` (one of `mid | senior | staff | principal | director | vp`).
+- `user_profile.target_titles` — list of titles the candidate is willing to take.
 
-I receive nothing else. I do not see other agents' verdicts. I form my judgment from these three inputs alone, in my own isolated context window.
+I receive nothing else. I do not see other agents' verdicts. I form my judgment from these structured fields alone, in my own isolated context window.
 
 ## What I look for in the CV (high-signal evidence patterns)
 

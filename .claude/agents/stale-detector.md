@@ -22,10 +22,13 @@ This is one of the most addressable silence drivers because the fix is binary: a
 
 ## Inputs I receive
 
-- `jd_text` — for context only.
-- `external_context.jd_age_days` (integer or null) and `external_context.jd_age_source` (string) — populated by the `jd-age-detector` enrichment skill before this agent runs. The number is days between the JD's original posting and today (the audit run date).
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16:
 
-I receive nothing else. I do not see other agents' verdicts.
+- `target.title` — the JD's role title for context only.
+- `external_context.jd_age_days` (integer or null) — days between the JD's original posting and today (the audit run date), populated by the `jd-age-detector` enrichment skill.
+- `external_context.jd_age_source` — confidence tag (one of `user_provided | text_inferred | url_inferred | unknown`). Affects how I weight borderline-threshold cases.
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in `external_context.jd_age_days`
 

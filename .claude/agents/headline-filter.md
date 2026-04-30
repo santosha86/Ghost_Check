@@ -29,11 +29,20 @@ This is a tactical, surface-level agent. It does not judge the candidate's actua
 
 ## Inputs I receive
 
-- `cv_text` — the parsed CV as markdown. I read the first 3-5 lines to identify the headline structure.
-- `jd_text` — the JD as parsed markdown. I read the role title, location requirements, and any tier-specific language at the top of the JD.
-- `user_profile` — the structured `UserProfile` object from `config/profile.yml`, including `target_titles`, `target_seniority`, and `target_locations`. I read this to know the candidate's stated targets.
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16. The headline is already parsed into discrete components — I do not re-derive it from raw text.
 
-I receive nothing else. I do not see other agents' verdicts.
+- `candidate.name` — full name from the CV header (typically the H1 line).
+- `candidate.current_title` — current role title or tagline that sits below the name.
+- `candidate.current_company` — most-recent employer name.
+- `candidate.location` — city / country or "remote".
+- `target.title` — the JD's role title.
+- `target.seniority_keyword` — extracted seniority keyword ("Chief", "Director", etc.).
+- `target.location` — location requirement from the JD (or null).
+- `user_profile.target_titles` — list of titles the candidate is targeting; used to detect headline-vs-target mismatch.
+- `user_profile.target_seniority` — declared target tier.
+- `user_profile.target_locations` — list of acceptable locations (or "remote").
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in the CV (headline parsing)
 

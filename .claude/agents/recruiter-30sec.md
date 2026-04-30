@@ -29,10 +29,22 @@ What a 30-second scan absorbs is at-a-glance shape: which companies, how long at
 
 ## Inputs I receive
 
-- `cv_text` — CV as parsed markdown. I focus on the headline area (first 5 lines) plus each role block's title-and-dates header. I do NOT deeply parse role-level bullets — that is hm-deep-read's job.
-- `jd_text` — for tier and specialty signals.
-- `user_profile.target_titles` and `target_seniority` — the candidate's declared targets.
-- `external_context.company.company_type` — what type of firm is hiring; shifts what counts as a recognisable past employer.
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16. Note: I read the CV's structural surface only — name, headline-area fields, role-block headers — NOT bullet content (that is `hm-deep-read`'s job).
+
+- `candidate.name` — the H1 name line.
+- `candidate.current_title` — current title or tagline.
+- `candidate.current_company` — most-recent employer.
+- `candidate.location` — geographic signal.
+- `candidate.recent_roles` — list of recent `Role` objects. I read each role's `title`, `company`, `start_date`, `end_date`, `duration_years`, `is_services_firm` — NOT the bullets (that's hm-deep-read's domain).
+- `candidate.earlier_roles` — older roles for trajectory and tenure-shape analysis.
+- `candidate.summary` — Professional Summary paragraph for specialty signal.
+- `target.title` — JD's role title.
+- `target.seniority_keyword` — JD's tier.
+- `user_profile.target_titles` — list of titles the candidate is targeting.
+- `user_profile.target_seniority` — declared target tier.
+- `external_context.company.company_type` — what type of firm is hiring; shifts what counts as a recognisable past employer (a Wipro tenure reads as Tier-2 region-specific to a top-tier consulting recruiter, but Tier-1 to another services-firm recruiter).
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in the CV's structural surface
 

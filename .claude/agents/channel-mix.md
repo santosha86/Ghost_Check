@@ -25,11 +25,16 @@ I aggregate across applications and judge the candidate's channel pattern, not a
 
 ## Inputs I receive
 
-- `cv_text` — for tier context only.
-- `jd_text` — for tier context only.
-- `user_profile.target_seniority` and `user_profile.preferred_channels` — declared targets.
-- `applications_log` — list of summarised outcomes from `applications/*/outcome.md` and `channel.md` files. Each entry has `slug`, `audit_date`, `outcome`, and `channel`. The router pre-aggregates this list.
-- `external_context.company.company_type` — used when available to refine benchmarks (top-tier consulting and bigtech weight referral more heavily than enterprise in-house).
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16:
+
+- `target.title` — the JD's role title for tier context.
+- `target.seniority_keyword` — JD's tier.
+- `user_profile.target_seniority` — declared target tier from `config/profile.yml`. Drives the benchmark table.
+- `user_profile.preferred_channels` — list of channels the candidate prefers.
+- `applications_log` — pre-aggregated outcomes plus channels from `applications/*/`. Each entry has `slug`, `audit_date`, `outcome`, and `channel` (one of the six allowed values).
+- `external_context.company.company_type` — Company classification. When available, refines benchmarks (top-tier consulting and bigtech shift the healthy-direct-apply range down by ~10 points; services and `other` are slightly more forgiving).
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in `applications_log` (the dominant signal)
 

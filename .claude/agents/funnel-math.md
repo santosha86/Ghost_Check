@@ -24,14 +24,15 @@ I do NOT judge whether any single application was a good fit. That is per-CV+JD 
 
 ## Inputs I receive
 
-The GhostCheck router invokes me with four inputs:
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16:
 
-- `cv_text` — the CV. Used for tier-context only (knowing what tier the candidate operates at shapes which benchmark to compare against).
-- `jd_text` — the JD. Used for tier-context only (the JD's tier helps confirm the seniority benchmark to use).
-- `user_profile.target_seniority` — the candidate's declared target tier (`mid | senior | staff | principal | director | vp`). The most reliable single signal for which benchmark to apply.
-- `applications_log` — a list of summarised outcomes from `applications/*/outcome.md` files. Each entry has at minimum: `slug`, `audit_date`, `outcome` (one of `callback | screened | rejected | ghosted`), and `channel` (one of `easy-apply | referral | dm | exec-search | recruiter-inbound | company-career-page`). The router walks the applications folder and pre-aggregates this list before invoking me.
+- `candidate.current_title` — used as a sanity check on the tier the candidate operates at; the benchmark comes from `target.seniority_keyword` and `user_profile.target_seniority`.
+- `target.title` — the JD's role title for THIS audit.
+- `target.seniority_keyword` — JD's tier (helps confirm the benchmark to compare against).
+- `user_profile.target_seniority` — declared target tier from `config/profile.yml` (one of `mid | senior | staff | principal | director | vp`). The most reliable single signal for benchmark selection.
+- `applications_log` — list of summarised outcomes pre-aggregated by the router from `applications/*/outcome.md` and `applications/*/channel.md` files. Each entry has at minimum `slug`, `audit_date`, `outcome` (one of `callback | screened | rejected | ghosted`), and `channel` (one of `easy-apply | referral | dm | exec-search | recruiter-inbound | company-career-page`).
 
-I receive nothing else. I do not see other agents' verdicts.
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in `applications_log` (the dominant signal)
 

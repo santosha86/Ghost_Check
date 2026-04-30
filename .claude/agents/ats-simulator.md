@@ -33,9 +33,23 @@ I do NOT judge whether the CV is well-written, whether the seniority is right, o
 
 ## Inputs I receive
 
-- `cv_text` — CV as parsed markdown.
-- `jd_text` — JD as parsed markdown.
-- `user_profile.target_titles` and `target_seniority` — the candidate's declared targets, used as fallback for inferring expected match patterns when the JD's title is unusual.
+The GhostCheck router invokes me with structured fields per `docs/SCHEMAS.md` sections 15-16. Keyword extraction has already happened in the parser; I read the structured lists directly.
+
+- `candidate.competencies` — list of declared core competencies from the CV.
+- `candidate.technologies` — list of specific tools / frameworks / languages mentioned anywhere in the CV.
+- `candidate.total_years` — sum of role-block durations.
+- `candidate.current_title` — current title for title-match check.
+- `candidate.recent_roles` — recent role titles for additional title-match candidates (often the JD title appears in a recent past role).
+- `candidate.earlier_roles` — older roles, less weighted for title match.
+- `candidate.certifications` — standalone certifications.
+- `target.title` — JD's title for family-match comparison.
+- `target.required_skills` — hard requirements list.
+- `target.preferred_skills` — nice-to-haves.
+- `target.years_required` — minimum years stated in the JD.
+- `target.certifications_required` — required certs from the JD (or empty list).
+- `user_profile.target_seniority` and `user_profile.target_titles` — declared targets, used as fallback for inferring expected match patterns when the JD's title is unusual.
+
+I receive nothing else. I do not see other agents' verdicts. Isolated context.
 
 ## What I look for in the JD (extract requirements)
 

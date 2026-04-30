@@ -607,26 +607,25 @@ All eleven agent files updated. Each agent's frontmatter `inputs:` now declares 
 
 Per-agent input declarations are tailored to each agent's actual needs — bucket-classifier reads bullets and tier signals; google-test reads candidate name and google_results plus market_leadership requirement; it-services-discount reads role.is_services_firm flags and target consulting/services signals; etc. See the eleven agent files for the specific input lists.
 
-**Body sweep PENDING (next session):**
+**Body sweep — "Inputs I receive" section DONE (2026-04-28):**
 
-The agent BODIES still describe inputs as "cv_text" / "jd_text" in their "## Inputs I receive" sections and reference raw text reasoning patterns in their body content. Agents will function despite the body-text mismatch (Claude reads whatever the input bundle actually contains; the prompt body's references to cv_text are now unbound but Claude reasons over the actual data anyway), but the prompts will read inconsistently until the body sweep finishes.
+All eleven agent body sections under "## Inputs I receive" have been rewritten to describe the structured-field inputs by name, matching their frontmatter declarations. Each agent's body now correctly tells Claude what to expect from the router bundle: `candidate.recent_roles` for bucket-classifier and hm-deep-read; `external_context.google_results` for google-test; `external_context.jd_age_days` for stale-detector and posting-decoder; `applications_log` for funnel-math and channel-mix; etc.
 
-Body sweep scope per agent:
+Router contract and agent expectation are now aligned. The system is no longer in the broken intermediate state where router dispatched structured fields but agents described `cv_text`/`jd_text`.
 
-1. Update "## Inputs I receive" section to describe the new structured inputs by name.
-2. Search-and-replace `cv_text` and `jd_text` references in body text to structured field references.
-3. Replace hardcoded Santosh-specific fix-hint examples (especially in `hm-deep-read.md`, `headline-filter.md`, `it-services-discount.md`) with explicit Rohan-Mehta-from-`cv.example.md` examples marked illustrative.
-4. Remove hardcoded firm name lists from `it-services-discount.md` body and `company-classifier.md` body, point them at `config/known_firms.yml`.
+**Body sweep — remaining items PENDING (tomorrow):**
 
-Estimated: 1.5-2 hours of focused work in the next session. Pure cleanup; no architectural decisions remaining.
+1. Hardcoded firm-name lists removed from `it-services-discount.md` body section "What I look for in the CV" and from `company-classifier.md` body — both should defer to `config/known_firms.yml` instead of restating the list inline.
+2. Hardcoded Santosh-specific fix-hint examples (SABIC, Nor Consult, STC mentions in `hm-deep-read.md`, `headline-filter.md`, `it-services-discount.md`, `recruiter-30sec.md`) replaced with the canonical Rohan Mehta examples from `profile/cv.example.md`, marked illustrative.
+3. Identity sentences referencing "senior AI architect" (e.g. funnel-math.md "## My job") generalised to domain-agnostic language so the prompts don't presume the AI domain.
+
+Estimated: 1-1.5 hours focused work next session.
 
 **Then execute (in priority order):**
 
-- A3 cross-domain validation: write a scrubbed-persona electrical-engineer CV plus matching JD, run audit, observe whether the new structured architecture produces sensible verdicts on a non-AI domain.
+- A3 cross-domain validation: scrubbed-persona electrical-engineer CV plus matching JD, run audit, observe whether the new structured architecture produces sensible verdicts on a non-AI domain.
 - B-items as time permits.
-- Final smoke-test on Santosh's real CV+JD to confirm the audit still produces sensible output post-cleanup (probability should land in a similar 35-45% range; the cleanup is architectural, not heuristic-changing).
-
-The system is in an intermediate state during the agent sweep — router expects structured-field inputs but agents still expect raw `cv_text`/`jd_text`. Tests will fail in this interim. Do NOT run `/ghostcheck audit` until the agent sweep completes. The foundation commit at the top of this section is a recovery checkpoint in case the chat context compacts.
+- Smoke-test on Santosh's real CV+JD to confirm the audit still produces sensible output post-cleanup.
 
 ### E. Why we are not fixing this now
 
