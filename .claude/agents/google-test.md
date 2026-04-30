@@ -4,9 +4,14 @@ description: Judges the candidate's online surface — what a recruiter sees whe
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - external_context
+  - candidate.name
+  - candidate.current_title
+  - candidate.recent_roles
+  - target.title
+  - target.seniority_keyword
+  - target.market_leadership_required
+  - external_context.google_results
+  - user_profile.target_seniority
 capabilities: []
 ---
 

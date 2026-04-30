@@ -4,9 +4,10 @@ description: Judges whether the candidate's application-to-callback conversion r
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - candidate.current_title
+  - target.title
+  - target.seniority_keyword
+  - user_profile.target_seniority
   - applications_log
 capabilities: []
 ---

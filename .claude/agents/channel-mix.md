@@ -4,11 +4,12 @@ description: Judges whether the candidate's channel distribution (Easy Apply vs 
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - target.title
+  - target.seniority_keyword
+  - user_profile.target_seniority
+  - user_profile.preferred_channels
   - applications_log
-  - external_context
+  - external_context.company.company_type
 capabilities: []
 ---
 

@@ -4,8 +4,13 @@ description: Judges whether the JD is a genuine open requisition or a "theater" 
 model: sonnet
 tools: []
 inputs:
-  - jd_text
-  - external_context
+  - target.title
+  - target.summary
+  - target.responsibilities
+  - target.required_skills
+  - external_context.jd_age_days
+  - external_context.jd_age_source
+  - external_context.jd_text_fallback
 capabilities: []
 ---
 

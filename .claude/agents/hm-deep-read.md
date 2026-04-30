@@ -4,9 +4,12 @@ description: Simulates a hiring manager's deep read of CV bullets — distinct f
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - candidate.recent_roles
+  - candidate.earlier_roles
+  - target.title
+  - target.seniority_keyword
+  - target.responsibilities
+  - user_profile.target_seniority
 capabilities: []
 ---
 

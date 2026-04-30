@@ -4,8 +4,9 @@ description: Judges whether the candidate applied too long after the JD was post
 model: sonnet
 tools: []
 inputs:
-  - jd_text
-  - external_context
+  - target.title
+  - external_context.jd_age_days
+  - external_context.jd_age_source
 capabilities: []
 ---
 

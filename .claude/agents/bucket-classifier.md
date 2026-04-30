@@ -4,9 +4,15 @@ description: Judges whether the CV reads at the target seniority level or at one
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - candidate.recent_roles
+  - candidate.summary
+  - candidate.competencies
+  - target.title
+  - target.seniority_keyword
+  - target.responsibilities
+  - target.years_required
+  - user_profile.target_seniority
+  - user_profile.target_titles
 capabilities: []
 ---
 

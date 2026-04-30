@@ -4,9 +4,16 @@ description: Judges whether the candidate's one-line identity at the top of the 
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - candidate.name
+  - candidate.current_title
+  - candidate.current_company
+  - candidate.location
+  - target.title
+  - target.seniority_keyword
+  - target.location
+  - user_profile.target_titles
+  - user_profile.target_seniority
+  - user_profile.target_locations
 capabilities: []
 ---
 

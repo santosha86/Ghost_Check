@@ -4,10 +4,18 @@ description: Simulates a recruiter's 30-second scan of the CV's structural surfa
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
-  - external_context
+  - candidate.name
+  - candidate.current_title
+  - candidate.current_company
+  - candidate.location
+  - candidate.recent_roles
+  - candidate.earlier_roles
+  - candidate.summary
+  - target.title
+  - target.seniority_keyword
+  - user_profile.target_titles
+  - user_profile.target_seniority
+  - external_context.company.company_type
 capabilities: []
 ---
 

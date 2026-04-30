@@ -601,12 +601,24 @@ After this cleanup, V1.1 begins with a clean architecture: structured extraction
 - `.claude/skills/ghostcheck/SKILL.md` rewritten. Router now invokes parser twice (once per CV, once per JD), unpacks structured profiles, pre-aggregates `applications_log` from `applications/*/outcome.md` plus `channel.md`, dispatches to each agent with named-field inputs resolved from the agent's frontmatter `inputs:` declarations.
 - `config/known_firms.yml` created. IT-services list (Wipro, TCS, Infosys, etc.), top-tier consulting list, bigtech list. Replaces the hardcoded firm names previously in `it-services-discount.md` and `company-classifier.md` prompt bodies. Domain forks edit this file rather than editing prompts.
 
-**Pending (in this same session):**
+**Frontmatter sweep DONE (2026-04-30):**
 
-- Sweep all eleven agent files to update `inputs:` frontmatter from `[cv_text, jd_text, user_profile]` to dotted-path references against the new structured profiles (e.g. `[candidate.recent_roles, target.title, user_profile.target_seniority]`).
-- Sweep all eleven agent prompt bodies to reference named structured fields rather than re-parse raw text.
-- Replace Santosh-specific fix-hint examples with explicit references to `cv.example.md`'s Rohan Mehta canonical persona, marked illustrative.
-- Remove hardcoded firm name lists from `it-services-discount.md` body and `company-classifier.md` body (point at `config/known_firms.yml` instead).
+All eleven agent files updated. Each agent's frontmatter `inputs:` now declares dotted-path references to structured fields (e.g. `candidate.recent_roles`, `target.title`, `user_profile.target_seniority`) instead of `[cv_text, jd_text, user_profile]`. The router can now correctly resolve inputs against the structured `candidate` and `target` objects produced by the parser.
+
+Per-agent input declarations are tailored to each agent's actual needs — bucket-classifier reads bullets and tier signals; google-test reads candidate name and google_results plus market_leadership requirement; it-services-discount reads role.is_services_firm flags and target consulting/services signals; etc. See the eleven agent files for the specific input lists.
+
+**Body sweep PENDING (next session):**
+
+The agent BODIES still describe inputs as "cv_text" / "jd_text" in their "## Inputs I receive" sections and reference raw text reasoning patterns in their body content. Agents will function despite the body-text mismatch (Claude reads whatever the input bundle actually contains; the prompt body's references to cv_text are now unbound but Claude reasons over the actual data anyway), but the prompts will read inconsistently until the body sweep finishes.
+
+Body sweep scope per agent:
+
+1. Update "## Inputs I receive" section to describe the new structured inputs by name.
+2. Search-and-replace `cv_text` and `jd_text` references in body text to structured field references.
+3. Replace hardcoded Santosh-specific fix-hint examples (especially in `hm-deep-read.md`, `headline-filter.md`, `it-services-discount.md`) with explicit Rohan-Mehta-from-`cv.example.md` examples marked illustrative.
+4. Remove hardcoded firm name lists from `it-services-discount.md` body and `company-classifier.md` body, point them at `config/known_firms.yml`.
+
+Estimated: 1.5-2 hours of focused work in the next session. Pure cleanup; no architectural decisions remaining.
 
 **Then execute (in priority order):**
 

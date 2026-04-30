@@ -4,9 +4,20 @@ description: Simulates classic ATS (applicant tracking system) keyword and struc
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - user_profile
+  - candidate.competencies
+  - candidate.technologies
+  - candidate.total_years
+  - candidate.current_title
+  - candidate.recent_roles
+  - candidate.earlier_roles
+  - candidate.certifications
+  - target.title
+  - target.required_skills
+  - target.preferred_skills
+  - target.years_required
+  - target.certifications_required
+  - user_profile.target_seniority
+  - user_profile.target_titles
 capabilities: []
 ---
 

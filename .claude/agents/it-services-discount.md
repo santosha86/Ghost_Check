@@ -4,9 +4,15 @@ description: Judges whether the candidate's tenure at IT-services firms (Wipro, 
 model: sonnet
 tools: []
 inputs:
-  - cv_text
-  - jd_text
-  - external_context
+  - candidate.recent_roles
+  - candidate.earlier_roles
+  - candidate.summary
+  - target.consulting_signals_present
+  - target.services_signals_present
+  - target.product_signals_present
+  - target.market_leadership_required
+  - external_context.company.company_type
+  - external_context.company.sources
 capabilities: []
 ---
 
